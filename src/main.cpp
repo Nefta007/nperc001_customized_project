@@ -13,20 +13,35 @@
 #define F4_Sharp 370
 #define G4_Sharp 415
 
-#define NUM_TASKS 1 //TODO: Change to the number of tasks being used
+#define NUM_TASKS 2 //TODO: Change to the number of tasks being used
 int I_Want_Billions[22] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat}; 
 int I_want_Time[22] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8};
 
-int club_cards[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
-int heart_cards[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
-int diamond_cards[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
-int spade_cards[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
+// int suits[] = {1,2,3,4};
+// int club_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
+// int heart_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
+// int diamond_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
+// int spade_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
+
+
+int value;
+// value = club_cards[rand()%13];
+// serial_println(value);
 
 unsigned char is_up;
 unsigned char is_down;
 unsigned char player_money;
 unsigned char player_bet;
 unsigned char player_loan;
+unsigned char cardCount;
+unsigned char player_suit;
+unsigned char dealer_suit;
+unsigned char player_face;
+unsigned char dealer_face;
+char* dealer_card;
+char* player_card;
+char* dealer_cardF;
+char* player_cardF;
 
 // Task struct for concurrent synchSMs implmentations
 typedef struct _task{
@@ -39,10 +54,11 @@ typedef struct _task{
 
 //TODO: Define Periods for each task
 // e.g. const unsined long TASK1_PERIOD = <PERIOD>
-const unsigned long JS_Period = 1;
+const unsigned long JS_Period = 100;
+const unsigned long Card_Period = 1000;
 
 // const unsigned long Direction_Period = 500;
-const unsigned long GCD_PERIOD = JS_Period;//TODO:Set the GCD Period
+const unsigned long GCD_PERIOD = findGCD(JS_Period, Card_Period);//TODO:Set the GCD Period
 
 task tasks[NUM_TASKS]; // declared task array with 5 tasks
 
@@ -67,6 +83,9 @@ int stages[8] = {0b0001, 0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001}
 enum JS_state{idle_state, up_state, down_state};
 int TickFtn_JS(int state);
 
+// enum card_state{idle_card, card_deal, suit_state, value_state};
+// int TickFtn_Card(int state);
+
 int main(void) {
     //TODO: initialize all your inputs and ouputs
 
@@ -80,11 +99,11 @@ int main(void) {
     serial_init(9600);
 
     // //TODO: Initialize the buzzer timer/pwm(timer0)
-    // OCR0A = 128; //sets duty cycle to 50% since TOP is always 256
+    OCR0A = ICR1/2; //sets duty cycle to 50% since TOP is always 256
 
     // //TODO: Initialize the servo timer/pwm(timer1)
-    // TCCR1A |= (1 << WGM11) | (1 << COM1A1); //COM1A1 sets it to channel A
-    // TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS11); //CS11 sets the prescaler to be 8
+    TCCR1A |= (1 << WGM11) | (1 << COM1A1); //COM1A1 sets it to channel A
+    TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS11); //CS11 sets the prescaler to be 8
     // //WGM11, WGM12, WGM13 set timer to fast pwm mode
 
     // ICR1 = 39999; //20ms pwm period
@@ -104,6 +123,11 @@ int main(void) {
     tasks[i].period = JS_Period;
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_JS;
+    // i++;
+    // tasks[i].state = idle_card;
+    // tasks[i].period = Card_Period;
+    // tasks[i].elapsedTime = tasks[i].period;
+    // tasks[i].TickFct = &TickFtn_Card;
 
     TimerSet(GCD_PERIOD);
     TimerOn();
@@ -160,18 +184,16 @@ int TickFtn_JS(int state){
     switch (state)
     {
     case idle_state:
-        serial_println(is_up);
-        serial_println(is_down);
     break;
 
     case up_state:
         is_up = 1;
-        serial_println(ADC_read(0));
+        //serial_println(is_up);
     break;
 
     case down_state:
         is_down = 1;
-        serial_println(is_down);
+        //serial_println(is_down);
     break;
 
     default:
@@ -179,3 +201,117 @@ int TickFtn_JS(int state){
     }
     return state;
 }
+
+// enum card_state{idle_card, suit_state, value_state};
+// int TickFtn_Card(int state){
+//     switch (state)
+//     {
+//     case idle_card:
+//         cardCount = 52;
+//         dealer_suit = 0;
+//         dealer_face = 0;
+//         player_suit = 0;
+//         player_face = 0;
+//         state = card_deal;
+//     break;
+
+//     case card_deal:
+//         if(is_up){
+//             dealer_suit = suits[rand()%3];
+//             player_suit = suits[rand()%3];
+//             state = suit_state;
+//         }
+//         else{
+//             state = idle_card;
+//         }
+//     break;
+
+//     case suit_state:
+//          if( dealer_suit == 1){
+//             dealer_face = club_cards[rand()%13];
+//         }
+//         else if(dealer_suit == 2){
+//             dealer_face = heart_cards[rand()%13];
+//         }
+//         else if(dealer_suit == 3){
+//             dealer_face = diamond_cards[rand()%13];
+//         }
+//         else{
+//             dealer_face = spade_cards[rand()%13];
+//         }
+//         if( player_suit == 1){
+//             player_face = club_cards[rand()%13];
+//         }
+//         else if(player_suit == 2){
+//             player_face = heart_cards[rand()%13];
+//         }
+//         else if(player_suit == 3){
+//             player_face = diamond_cards[rand()%13];
+//         }
+//         else{
+//             player_face = spade_cards[rand()%13];
+//         }
+//         state = value_state;
+//     break;
+    
+//     case value_state:
+//         state = idle_card;
+//     break;
+
+//     default:
+//         break;
+//     }
+
+//     switch (state)
+//     {
+//     case idle_card:
+//     break;
+
+//     case card_deal:
+//         serial_println(cardCount);
+//         serial_println(dealer_card);
+//         // serial_println(dealer_face);
+//         serial_println(player_suit);
+//         // serial_println(player_face);
+//     break;
+
+// value = club_cards[rand()%13];
+// serial_println(value);
+    
+//     case suit_state:
+//         if( dealer_suit == 1){
+//             dealer_card = "clubs";
+//         }
+//         else if(dealer_suit == 2){
+//             dealer_card = "hearts";
+//         }
+//         else if(dealer_suit == 3){
+//             dealer_card = "diamonds";
+//         }
+//         else{
+//             dealer_card = "spades";
+//         }
+//         if( player_suit == 1){
+//             player_card = "clubs";
+//         }
+//         else if(player_suit == 2){
+//             player_card = "hearts";
+//         }
+//         else if(player_suit == 3){
+//             player_card = "diamonds";
+//         }
+//         else{
+//             player_card = "spades";
+//         }
+//     break;
+    
+//     case value_state:
+       
+//     break;
+    
+//     default:
+//         break;
+//     }
+
+//     return state;
+// }
