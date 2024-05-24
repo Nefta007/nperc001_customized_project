@@ -134,7 +134,7 @@ int main(void)
     serial_init(9600);
 
     // //TODO: Initialize the buzzer timer/pwm(timer0)
-    OCR0A = ICR1 / 2; // sets duty cycle to 50% since TOP is always 256
+    OCR0A = 128; // sets duty cycle to 50% since TOP is always 256
 
     // //TODO: Initialize the servo timer/pwm(timer1)
     TCCR1A |= (1 << WGM11) | (1 << COM1A1);              // COM1A1 sets it to channel A
