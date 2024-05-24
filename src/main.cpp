@@ -1,12 +1,3 @@
-/*        Neftali Percastegui & nperc001@ucr.edu:
- *          Discussion Section: 024
- *         Assignment: Lab # 7 Exercise # 3
- *
- *
- *         I acknowledge all content contained herein, excluding template or example code, is my own original work.
- *
- *         https://youtu.be/19CRrsWQhew
- */
 #include "timerISR.h"
 #include "helper.h"
 #include "periph.h"
@@ -22,15 +13,20 @@
 #define F4_Sharp 370
 #define G4_Sharp 415
 
-int I_Want_Billions[] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat}; 
+#define NUM_TASKS 1 //TODO: Change to the number of tasks being used
+int I_Want_Billions[22] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat}; 
+int I_want_Time[22] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8};
 
-int I_want_Time[] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8};
+int club_cards[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
+int heart_cards[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
+int diamond_cards[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
+int spade_cards[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
 
 unsigned char is_up;
 unsigned char is_down;
-
-#define NUM_TASKS 1 //TODO: Change to the number of tasks being used
-
+unsigned char player_money;
+unsigned char player_bet;
+unsigned char player_loan;
 
 // Task struct for concurrent synchSMs implmentations
 typedef struct _task{
@@ -68,14 +64,14 @@ int stages[8] = {0b0001, 0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001}
 
 // enum direction_state{idle_direction, CW_Direction, CCW_Direction};
 // int TickFtn_direction(int state);
-enum JS_Period{idle_state, up_state, down_state};
+enum JS_state{idle_state, up_state, down_state};
 int TickFtn_JS(int state);
 
 int main(void) {
     //TODO: initialize all your inputs and ouputs
 
     ADC_init();   // initializes ADC
-    SPI_INIT ();
+    SPI_INIT();
     //  Output: DDR = 1, PORT = 0
     //  Input: DDR = 0, PORT = 1
     DDRC = 0b000000; PORTC = 0b111111;
@@ -109,8 +105,8 @@ int main(void) {
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_JS;
 
-    // TimerSet(GCD_PERIOD);
-    // TimerOn();
+    TimerSet(GCD_PERIOD);
+    TimerOn();
 
     while (1) {
     }
