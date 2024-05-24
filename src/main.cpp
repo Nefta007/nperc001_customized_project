@@ -13,8 +13,8 @@
 #define F4_Sharp 370
 #define G4_Sharp 415
 
-#define NUM_TASKS 2 //TODO: Change to the number of tasks being used
-int I_Want_Billions[22] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat}; 
+#define NUM_TASKS 2 // TODO: Change to the number of tasks being used
+int I_Want_Billions[22] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat};
 int I_want_Time[22] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8};
 
 // int suits[] = {1,2,3,4};
@@ -22,7 +22,6 @@ int I_want_Time[22] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 
 // int heart_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
 // int diamond_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
 // int spade_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
-
 
 int value;
 // value = club_cards[rand()%13];
@@ -38,86 +37,121 @@ unsigned char player_suit;
 unsigned char dealer_suit;
 unsigned char player_face;
 unsigned char dealer_face;
-char* dealer_card;
-char* player_card;
-char* dealer_cardF;
-char* player_cardF;
+char *dealer_card;
+char *player_card;
+char *dealer_cardF;
+char *player_cardF;
 
 // Task struct for concurrent synchSMs implmentations
-typedef struct _task{
-	signed 	 char state; 		//Task's current state
-	unsigned long period; 		//Task period
-	unsigned long elapsedTime; 	//Time elapsed since last task tick
-	int (*TickFct)(int); 		//Task tick function
+typedef struct _task
+{
+    signed char state;         // Task's current state
+    unsigned long period;      // Task period
+    unsigned long elapsedTime; // Time elapsed since last task tick
+    int (*TickFct)(int);       // Task tick function
 } task;
 
-
-//TODO: Define Periods for each task
-// e.g. const unsined long TASK1_PERIOD = <PERIOD>
+// TODO: Define Periods for each task
+//  e.g. const unsined long TASK1_PERIOD = <PERIOD>
 const unsigned long JS_Period = 100;
 const unsigned long Card_Period = 1000;
 
 // const unsigned long Direction_Period = 500;
-const unsigned long GCD_PERIOD = findGCD(JS_Period, Card_Period);//TODO:Set the GCD Period
+const unsigned long GCD_PERIOD = findGCD(JS_Period, Card_Period); // TODO:Set the GCD Period
 
 task tasks[NUM_TASKS]; // declared task array with 5 tasks
 
-
-void TimerISR() {
-	for ( unsigned int i = 0; i < NUM_TASKS; i++ ) {                   // Iterate through each task in the task array
-		if ( tasks[i].elapsedTime == tasks[i].period ) {           // Check if the task is ready to tick
-			tasks[i].state = tasks[i].TickFct(tasks[i].state); // Tick and set the next state for this task
-			tasks[i].elapsedTime = 0;                          // Reset the elapsed time for the next tick
-		}
-		tasks[i].elapsedTime += GCD_PERIOD;                        // Increment the elapsed time by GCD_PERIOD
-	}
+void HardwareReset()
+{
+    PORTB = SetBit(PORTB, 3, 0);// setResetPinToLow;
+    _delay_ms(200);
+    PORTB = SetBit(PORTB, 3, 1);// setResetPinToHigh;
+    _delay_ms(200);
 }
 
+void ST7735_init()
+{
+    HardwareReset();
+    PORTB = SetBit(PORTB, 2, 0); //cs
+    PORTB = SetBit(PORTB, 4, 0); //a0
+    SPI_SEND(0x01);// Send_Command(SWRESET);
+    _delay_ms(150);
+    SPI_SEND(0x11);// Send_Command(SLPOUT);
+    _delay_ms(200);
+    SPI_SEND(0x3A);// Send_Command(COLMOD);
+    SPI_SEND(0x06);// Send_Data(0x06); // for 18 bit color mode. You can pick any color mode you want
+    _delay_ms(10);
+    // Send_Command(DISPON);
+    SPI_SEND(0x29);// Send_Command(DISPON);
+    _delay_ms(200);
+}
 
-int stages[8] = {0b0001, 0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001};//Stepper motor phases
+void TimerISR()
+{
+    for (unsigned int i = 0; i < NUM_TASKS; i++)
+    { // Iterate through each task in the task array
+        if (tasks[i].elapsedTime == tasks[i].period)
+        {                                                      // Check if the task is ready to tick
+            tasks[i].state = tasks[i].TickFct(tasks[i].state); // Tick and set the next state for this task
+            tasks[i].elapsedTime = 0;                          // Reset the elapsed time for the next tick
+        }
+        tasks[i].elapsedTime += GCD_PERIOD; // Increment the elapsed time by GCD_PERIOD
+    }
+}
 
-//TODO: Create your tick functions for each task
+int stages[8] = {0b0001, 0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001}; // Stepper motor phases
+
+// TODO: Create your tick functions for each task
 
 // enum direction_state{idle_direction, CW_Direction, CCW_Direction};
 // int TickFtn_direction(int state);
-enum JS_state{idle_state, up_state, down_state};
+enum JS_state
+{
+    idle_state,
+    up_state,
+    down_state
+};
 int TickFtn_JS(int state);
 
 // enum card_state{idle_card, card_deal, suit_state, value_state};
 // int TickFtn_Card(int state);
 
-int main(void) {
-    //TODO: initialize all your inputs and ouputs
+int main(void)
+{
+    // TODO: initialize all your inputs and ouputs
 
-    ADC_init();   // initializes ADC
+    ADC_init(); // initializes ADC
     SPI_INIT();
+    ST7735_init();
     //  Output: DDR = 1, PORT = 0
     //  Input: DDR = 0, PORT = 1
-    DDRC = 0b000000; PORTC = 0b111111;
-    DDRB = 0b111111; PORTB = 0b000000;
-    DDRD = 0b11111111; PORTD = 0b00000000;
+    DDRC = 0b000000;
+    PORTC = 0b111111;
+    DDRB = 0b111111;
+    PORTB = 0b000000;
+    DDRD = 0b11111111;
+    PORTD = 0b00000000;
     serial_init(9600);
 
     // //TODO: Initialize the buzzer timer/pwm(timer0)
-    OCR0A = ICR1/2; //sets duty cycle to 50% since TOP is always 256
+    OCR0A = ICR1 / 2; // sets duty cycle to 50% since TOP is always 256
 
     // //TODO: Initialize the servo timer/pwm(timer1)
-    TCCR1A |= (1 << WGM11) | (1 << COM1A1); //COM1A1 sets it to channel A
-    TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS11); //CS11 sets the prescaler to be 8
+    TCCR1A |= (1 << WGM11) | (1 << COM1A1);              // COM1A1 sets it to channel A
+    TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS11); // CS11 sets the prescaler to be 8
     // //WGM11, WGM12, WGM13 set timer to fast pwm mode
 
     // ICR1 = 39999; //20ms pwm period
 
-    //OCR1A =  1999/* set your value here */ ;
+    // OCR1A =  1999/* set your value here */ ;
 
-
-    //TODO: Initialize tasks here
-    // e.g. 
-    // tasks[0].period = ;
-    // tasks[0].state = ;
-    // tasks[0].elapsedTime = ;
-    // tasks[0].TickFct = ;
-    // task 1
+    // TODO: Initialize tasks here
+    //  e.g.
+    //  tasks[0].period = ;
+    //  tasks[0].state = ;
+    //  tasks[0].elapsedTime = ;
+    //  tasks[0].TickFct = ;
+    //  task 1
     unsigned char i = 0;
     tasks[i].state = idle_state;
     tasks[i].period = JS_Period;
@@ -132,50 +166,58 @@ int main(void) {
     TimerSet(GCD_PERIOD);
     TimerOn();
 
-    while (1) {
+    while (1)
+    {
     }
 
     return 0;
 }
 
 // enum JS_Period{idle_state, up_state, down_state};
-int TickFtn_JS(int state){
+int TickFtn_JS(int state)
+{
     switch (state)
     {
     case idle_state:
-        if(ADC_read(0) >= 600){
+        if (ADC_read(0) >= 600)
+        {
             is_up = 0;
             state = up_state;
         }
-        else if(ADC_read(0) <300){
+        else if (ADC_read(0) < 300)
+        {
             is_down = 0;
             state = down_state;
         }
-        else{
+        else
+        {
             state = idle_state;
         }
-    break;
+        break;
 
     case up_state:
-        if(ADC_read(0) >= 600){
+        if (ADC_read(0) >= 600)
+        {
             state = up_state;
         }
-        else if(ADC_read(0) < 600){
+        else if (ADC_read(0) < 600)
+        {
             is_up = 0;
             state = idle_state;
         }
-    break;
+        break;
 
     case down_state:
         if (ADC_read(0) <= 300)
         {
             state = down_state;
         }
-        else if(ADC_read(0) > 300){
+        else if (ADC_read(0) > 300)
+        {
             is_down = 0;
             state = idle_state;
         }
-    break;
+        break;
 
     default:
         break;
@@ -184,17 +226,17 @@ int TickFtn_JS(int state){
     switch (state)
     {
     case idle_state:
-    break;
+        break;
 
     case up_state:
         is_up = 1;
-        //serial_println(is_up);
-    break;
+        // serial_println(is_up);
+        break;
 
     case down_state:
         is_down = 1;
-        //serial_println(is_down);
-    break;
+        // serial_println(is_down);
+        break;
 
     default:
         break;
@@ -253,7 +295,7 @@ int TickFtn_JS(int state){
 //         }
 //         state = value_state;
 //     break;
-    
+
 //     case value_state:
 //         state = idle_card;
 //     break;
@@ -277,7 +319,7 @@ int TickFtn_JS(int state){
 
 // value = club_cards[rand()%13];
 // serial_println(value);
-    
+
 //     case suit_state:
 //         if( dealer_suit == 1){
 //             dealer_card = "clubs";
@@ -304,11 +346,11 @@ int TickFtn_JS(int state){
 //             player_card = "spades";
 //         }
 //     break;
-    
+
 //     case value_state:
-       
+
 //     break;
-    
+
 //     default:
 //         break;
 //     }
