@@ -1,3 +1,14 @@
+
+/* Neftali Percastegui & nperc001@ucr.edu:
+* Discussion Section: 024
+* Assignment: Lab # 8 Exercise # 1
+*
+*
+* I acknowledge all content contained herein, excluding template or example code, is
+my own original work.
+*
+* https://youtu.be/XbzvwEzVO30
+*/
 #include "timerISR.h"
 #include "helper.h"
 #include "periph.h"
