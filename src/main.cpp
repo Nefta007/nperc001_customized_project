@@ -15,6 +15,7 @@ my own original work.
 #include <Arduino.h>
 #include "serialATmega.h"
 #include "spiAVr.h"
+#include "LCD.h"
 
 #define C5_Sharp 3609//554
 #define E5_Flat 3034//659
@@ -29,10 +30,11 @@ int I_Want_Billions[45] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_
 int I_want_Time[45] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8, 1, 1, 1, 1, 1, 1, 2, 1, 2, 4, 1, 2, 1, 4, 2, 2, 2, 2, 2, 2,2 ,2 ,6};
 
 int suits[] = {1,2,3,4};
-int club_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
-int heart_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
-int diamond_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
-int spade_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
+// int club_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
+// int heart_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
+// int diamond_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
+// int spade_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
+int card_values[] = {1,2,3,4,5,6,7,8,9,10,11};
 
 int value;
 // value = club_cards[rand()%13];
@@ -150,15 +152,13 @@ int main(void)
     // TODO: initialize all your inputs and ouputs
 
     ADC_init(); // initializes ADC
+    lcd_init();
  
     //  Output: DDR = 1, PORT = 0
     //  Input: DDR = 0, PORT = 1
-    DDRC = 0b000000;
-    PORTC = 0b111111;
-    DDRB = 0b111111;
-    PORTB = 0b000000;
-    DDRD = 0b11111111;
-    PORTD = 0b00000000;
+    DDRC = 0b000000; PORTC = 0b111111;
+    DDRB = 0b111111; PORTB = 0b000000;
+    DDRD = 0b11111111; PORTD = 0b00000000;
     serial_init(9600);
     SPI_INIT();
     ST7735_init();
@@ -309,34 +309,47 @@ int TickFtn_Card(int state){
     break;
 
     case suit_state:
-         if( dealer_suit == 1){
-            dealer_face = club_cards[rand()%13];
-        }
-        else if(dealer_suit == 2){
-            dealer_face = heart_cards[rand()%13];
-        }
-        else if(dealer_suit == 3){
-            dealer_face = diamond_cards[rand()%13];
-        }
-        else{
-            dealer_face = spade_cards[rand()%13];
-        }
-        if( player_suit == 1){
-            player_face = club_cards[rand()%13];
-        }
-        else if(player_suit == 2){
-            player_face = heart_cards[rand()%13];
-        }
-        else if(player_suit == 3){
-            player_face = diamond_cards[rand()%13];
-        }
-        else{
-            player_face = spade_cards[rand()%13];
-        }
+        // if( dealer_suit == 1){
+        //     dealer_face = player_card[rand()%13];
+        // }
+        // else if(dealer_suit == 2){
+        //     dealer_face = player_card[rand()%13];
+        // }
+        // else if(dealer_suit == 3){
+        //     dealer_face = player_card[rand()%13];
+        // }
+        // else{
+        //     dealer_face = player_card[rand()%13];
+        // }
+        // if( player_suit == 1){
+        //     player_face = club_cards[rand()%13];
+        // }
+        // else if(player_suit == 2){
+        //     player_face = heart_cards[rand()%13];
+        // }
+        // else if(player_suit == 3){
+        //     player_face = diamond_cards[rand()%13];
+        // }
+        // else{
+        //     player_face = spade_cards[rand()%13];
+        // }
+        
         state = value_state;
     break;
 
     case value_state:
+        // if( dealer_suit == 1){
+        //     dealer_face = club_cards[rand()%13];
+        // }
+        // else if(dealer_suit == 2){
+        //     dealer_face = heart_cards[rand()%13];
+        // }
+        // else if(dealer_suit == 3){
+        //     dealer_face = diamond_cards[rand()%13];
+        // }
+        // else{
+        //     dealer_face = spade_cards[rand()%13];
+        // }
         state = idle_card;
     break;
 
@@ -357,7 +370,7 @@ int TickFtn_Card(int state){
         // serial_println(player_face);
     break;
 
-value = club_cards[rand()%13];
+// value = club_cards[rand()%13];
 // serial_println(value);
 
     case suit_state:
@@ -409,7 +422,7 @@ int TickFtn_back(int state){
     break;
 
     case note_state:
-    if(i < 22){
+    if(i < 45){
         state = play_state;
     }
     else{
