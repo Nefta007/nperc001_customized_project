@@ -38,12 +38,16 @@ int Run_Away_Baby[41] = {A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sh
 int Run_Away_Time[41] = {2, 2, 1, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 4, 1, 1, 1, 2, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4};
 
 
-int suits[] = {1,2,3,4};
+int suits[4] = {1,2,3,4};
 // int club_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
 // int heart_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
 // int diamond_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
 // int spade_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
-int card_values[] = {1,2,3,4,5,6,7,8,9,10,11};
+int card_values[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
+
+String D_Card_Suits[11];
+String D_CARD_Face[11];
+int Dealer_vals[11];
 
 int value;
 // value = club_cards[rand()%13];
@@ -53,6 +57,11 @@ unsigned char is_up;
 unsigned char is_down;
 unsigned char j;
 unsigned char i;
+unsigned char k;
+unsigned char l;
+unsigned char m;
+unsigned char dealer_total;
+unsigned char d_card_total;
 unsigned char player_win;
 unsigned char player_loss;
 unsigned int player_money;
@@ -82,7 +91,7 @@ typedef struct _task
 // TODO: Define Periods for each task
 //  e.g. const unsined long TASK1_PERIOD = <PERIOD>
 const unsigned long JS_Period = 100;
-const unsigned long Card_Period = 1000;
+const unsigned long D_Card_Period = 1000;
 const unsigned long Background_Period = 200;
 const unsigned long Bet_Period = 1000;
 
@@ -161,8 +170,8 @@ int TickFtn_back(int state);
 enum bet_state{idle_money, bet_state, loan_state};
 int TickFtn_Bet(int state);
 
-// enum card_state{idle_card, card_deal, suit_state, value_state};
-// int TickFtn_Card(int state);
+enum card_state{D_idle_card, D_suit_state, D_face_state, D_val_state};
+int TickFtn_D_Card(int state);
 
 
 int main(void)
@@ -215,11 +224,11 @@ int main(void)
     tasks[i].period = Bet_Period;
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_Bet;
-    // i++;
-    // tasks[i].state = idle_card;
-    // tasks[i].period = Card_Period;
-    // tasks[i].elapsedTime = tasks[i].period;
-    // tasks[i].TickFct = &TickFtn_Card;
+    i++;
+    tasks[i].state = D_idle_card;
+    tasks[i].period = D_Card_Period;
+    tasks[i].elapsedTime = tasks[i].period;
+    tasks[i].TickFct = &TickFtn_D_Card;
     
     
 
@@ -369,7 +378,7 @@ int TickFtn_Bet(int state){
         //serial_println("do you want to make a bet");
         if(!((PINC >> 2)&0x01)){
                 is_bet = 1;
-                serial_println("hello");
+                // serial_println("hello");
         }
         if(player_loss){
             player_money = player_money - player_bet;
@@ -617,3 +626,60 @@ int TickFtn_back(int state){
     return state;
 }
 
+// enum card_state{D_idle_card, D_suit_state, D_face_state, D_val_state};
+int TickFtn_D_Card(int state){
+    switch (state)
+    {
+    case D_idle_card:
+        if(is_bet){
+            dealer_suit = suits[rand()%4];
+            i = 2;
+            j = 0;
+            k = 0;
+            l = 0;
+            m = 0;
+            dealer_total = 0;
+            d_card_total = 0;
+            state = D_suit_state;
+        }
+        else{
+            state = D_idle_card;
+        }
+    break;
+    
+    case D_suit_state:
+        if(i > 0){
+            state = D_suit_state;
+        }
+        else if(i <= 0){
+            dealer_face = card_values[rand()%13];
+            state = D_face_state;
+        }
+    break;
+
+    case D_face_state:
+        if(l > 0){
+            state = D_face_state;
+        }
+        else if(l <= 0 && dealer_total <= 17){
+            i = 0;
+            state = D_suit_state;
+        }
+        else if(dealer_total > 17){
+            i = 0;
+            state = D_val_state;
+        }
+    break;
+
+    case D_val_state:
+        if(d_card_total > 0){
+            state = D_val_state;
+        }
+        else if(!is_bet){
+            state = D_idle_card;
+        }
+    break;
+    default:
+        break;
+    }
+}
