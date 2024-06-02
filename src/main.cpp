@@ -53,9 +53,12 @@ unsigned char is_up;
 unsigned char is_down;
 unsigned char j;
 unsigned char i;
+unsigned char player_win;
+unsigned char player_loss;
 unsigned int player_money;
 unsigned int player_bet;
 unsigned int player_loan;
+unsigned int dealer_bet;
 unsigned char cardCount;
 unsigned char player_suit;
 unsigned char dealer_suit;
@@ -314,33 +317,47 @@ int TickFtn_Bet(int state){
         player_money = 1000;
         player_bet = 0;
         player_loan = 0;
+        is_bet = 0;
         if(is_up){
             serial_println("press up to increase current bet");
             state = bet_state;
+        }
+        else{
+            state = idle_money;
         }
         break;
     case bet_state:
         if(player_money > 0 && is_up){
             player_bet = player_bet + 100;
+            dealer_bet = player_bet;
             serial_println("current bet is");
             serial_println(player_bet);
             state = bet_state;
         }
         else if(player_money <= 0){
+            serial_println("how much would you like to borrow?");
+            player_loan = 0;
+            player_bet = 0;
+            is_bet = 0;
             state = loan_state;
         }
         break;
     case loan_state:
-        if(player_money <= 0 && is_up){
-            serial_println("how much would you like to borrow?");
+        if(is_up){
             serial_println("currently borrowed");
             serial_println(player_loan);
             state = loan_state;
         }
-        else{
+        else if(is_down){
+            state = idle_money;
+        }
+        else if(player_loan > 0 && !((PINC >> 2)&0x01)){
+            is_bet = 0;
+            player_money = player_loan;
             state = bet_state;
         }
         break;
+
     default:
         break;
     }
@@ -349,15 +366,20 @@ int TickFtn_Bet(int state){
     case idle_money:
         break;
     case bet_state:
-        serial_println("do you want to make a bet");
+        //serial_println("do you want to make a bet");
         if(!((PINC >> 2)&0x01)){
-            serial_println("you bet 100 dollars");
-            player_money = player_money - 100;
-            serial_println(player_money);
+                is_bet = 1;
+                serial_println("hello");
+        }
+        if(player_loss){
+            player_money = player_money - player_bet;
+        }
+        else if(player_win){
+            player_money = player_money + dealer_bet;
         }
         break;
     case loan_state:
-        serial_println("do you require a loan?");
+        player_loan = player_loan + 100;
         break;
     default:
         break;
