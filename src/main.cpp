@@ -22,12 +22,21 @@ my own original work.
 #define F5_Sharp 2702//740
 #define B4_Flat 4048//494
 #define A4_Flat 4544//440
+#define A4_Sharp 4291 //466
 #define F4_Sharp 5404//370
 #define G4_Sharp 4818//415
+#define D4_Sharp 6430 //311
+#define C4_Sharp 7219 // 277
 
 #define NUM_TASKS 4 // TODO: Change to the number of tasks being used
+// main background song
 int I_Want_Billions[45] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat};
 int I_want_Time[45] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8, 1, 1, 1, 1, 1, 1, 2, 1, 2, 4, 1, 2, 1, 4, 2, 2, 2, 2, 2, 2,2 ,2 ,6};
+
+// second song if user borrows money
+int Run_Away_Baby[41] = {A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, G4_Sharp, F4_Sharp, D4_Sharp, D4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, G4_Sharp, F4_Sharp, A4_Sharp, G4_Sharp, D4_Sharp, F4_Sharp, G4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, G4_Sharp, F4_Sharp, D4_Sharp, D4_Sharp, A4_Sharp, A4_Sharp, A4_Sharp, G4_Sharp, F4_Sharp, A4_Sharp, G4_Sharp};
+int Run_Away_Time[41] = {2, 2, 1, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 4, 1, 1, 1, 2, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4};
+
 
 int suits[] = {1,2,3,4};
 // int club_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
