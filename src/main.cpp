@@ -155,11 +155,12 @@ int TickFtn_JS(int state);
 enum Back_state{idleMusic_state, note_state, play_state};
 int TickFtn_back(int state);
 
+enum bet_state{idle_money, bet_state, loan_state};
+int TickFtn_Bet(int state);
+
 enum card_state{idle_card, card_deal, suit_state, value_state};
 int TickFtn_Card(int state);
 
-enum bet_state{idle_money, bet_state, loan_state};
-int TickFtn_Bet(int state);
 
 int main(void)
 {
@@ -207,15 +208,17 @@ int main(void)
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_back;
     i++;
-    tasks[i].state = idle_card;
-    tasks[i].period = Card_Period;
-    tasks[i].elapsedTime = tasks[i].period;
-    tasks[i].TickFct = &TickFtn_Card;
-    i++;
     tasks[i].state = idle_money;
     tasks[i].period = Bet_Period;
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_Bet;
+    i++;
+    tasks[i].state = idle_card;
+    tasks[i].period = Card_Period;
+    tasks[i].elapsedTime = tasks[i].period;
+    tasks[i].TickFct = &TickFtn_Card;
+    
+    
 
     TimerSet(GCD_PERIOD);
     TimerOn();
@@ -297,6 +300,56 @@ int TickFtn_JS(int state)
         // serial_println(is_down);
         break;
 
+    default:
+        break;
+    }
+    return state;
+}
+
+// enum bet_state{idle_money, bet_state, loan_state};
+int TickFtn_Bet(int state){
+    switch (state)
+    {
+    case idle_money:
+        player_money = 1000;
+        player_bet = 0;
+        player_loan = 0;
+        state = bet_state;
+        break;
+    case bet_state:
+        if(player_money > 0 && is_bet == 1){
+            state = bet_state;
+        }
+        else{
+            state = loan_state;
+        }
+        break;
+    case loan_state:
+        if(player_money <= 0){
+            state = loan_state;
+        }
+        else{
+            state = bet_state;
+        }
+        break;
+    default:
+        break;
+    }
+    switch (state)
+    {
+    case idle_money:
+        break;
+    case bet_state:
+        serial_println("do you want to make a bet");
+        if(!((PINC >> 3)&0x01)){
+            serial_println("you bet 100 dollars");
+            player_money = player_money - 100;
+            serial_println(player_money);
+        }
+        break;
+    case loan_state:
+        serial_println("do you require a loan?");
+        break;
     default:
         break;
     }
@@ -535,52 +588,3 @@ int TickFtn_back(int state){
     return state;
 }
 
-// enum bet_state{idle_money, bet_state, loan_state};
-int TickFtn_Bet(int state){
-    switch (state)
-    {
-    case idle_money:
-        player_money = 1000;
-        player_bet = 0;
-        player_loan = 0;
-        state = bet_state;
-        break;
-    case bet_state:
-        if(player_money > 0 && is_bet == 1){
-            state = bet_state;
-        }
-        else{
-            state = loan_state;
-        }
-        break;
-    case loan_state:
-        if(player_money <= 0){
-            state = loan_state;
-        }
-        else{
-            state = bet_state;
-        }
-        break;
-    default:
-        break;
-    }
-    switch (state)
-    {
-    case idle_money:
-        break;
-    case bet_state:
-        serial_println("do you want to make a bet");
-        if(!((PINC >> 3)&0x01)){
-            serial_println("you bet 100 dollars");
-            player_money = player_money - 100;
-            serial_println(player_money);
-        }
-        break;
-    case loan_state:
-        serial_println("do you require a loan?");
-        break;
-    default:
-        break;
-    }
-    return state;
-}
