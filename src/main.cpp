@@ -28,7 +28,7 @@ my own original work.
 #define D4_Sharp 6430 //311
 #define C4_Sharp 7219 // 277
 
-#define NUM_TASKS 4 // TODO: Change to the number of tasks being used
+#define NUM_TASKS 3//4 // TODO: Change to the number of tasks being used
 // main background song
 int I_Want_Billions[45] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat};
 int I_want_Time[45] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8, 1, 1, 1, 1, 1, 1, 2, 1, 2, 4, 1, 2, 1, 4, 2, 2, 2, 2, 2, 2,2 ,2 ,6};
@@ -54,8 +54,8 @@ unsigned char is_down;
 unsigned char j;
 unsigned char i;
 unsigned int player_money;
-unsigned char player_bet;
-unsigned char player_loan;
+unsigned int player_bet;
+unsigned int player_loan;
 unsigned char cardCount;
 unsigned char player_suit;
 unsigned char dealer_suit;
@@ -84,7 +84,7 @@ const unsigned long Background_Period = 200;
 const unsigned long Bet_Period = 1000;
 
 const unsigned long Direction_Period = 500;
-const unsigned long GCD_PERIOD = findGCD(JS_Period, Card_Period); // TODO:Set the GCD Period
+const unsigned long GCD_PERIOD = findGCD(JS_Period, Bet_Period); // TODO:Set the GCD Period
 
 task tasks[NUM_TASKS]; // declared task array with 5 tasks
 
@@ -158,8 +158,8 @@ int TickFtn_back(int state);
 enum bet_state{idle_money, bet_state, loan_state};
 int TickFtn_Bet(int state);
 
-enum card_state{idle_card, card_deal, suit_state, value_state};
-int TickFtn_Card(int state);
+// enum card_state{idle_card, card_deal, suit_state, value_state};
+// int TickFtn_Card(int state);
 
 
 int main(void)
@@ -212,11 +212,11 @@ int main(void)
     tasks[i].period = Bet_Period;
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_Bet;
-    i++;
-    tasks[i].state = idle_card;
-    tasks[i].period = Card_Period;
-    tasks[i].elapsedTime = tasks[i].period;
-    tasks[i].TickFct = &TickFtn_Card;
+    // i++;
+    // tasks[i].state = idle_card;
+    // tasks[i].period = Card_Period;
+    // tasks[i].elapsedTime = tasks[i].period;
+    // tasks[i].TickFct = &TickFtn_Card;
     
     
 
@@ -314,18 +314,27 @@ int TickFtn_Bet(int state){
         player_money = 1000;
         player_bet = 0;
         player_loan = 0;
-        state = bet_state;
-        break;
-    case bet_state:
-        if(player_money > 0 && is_bet == 1){
+        if(is_up){
+            serial_println("press up to increase current bet");
             state = bet_state;
         }
-        else{
+        break;
+    case bet_state:
+        if(player_money > 0 && is_up){
+            player_bet = player_bet + 100;
+            serial_println("current bet is");
+            serial_println(player_bet);
+            state = bet_state;
+        }
+        else if(player_money <= 0){
             state = loan_state;
         }
         break;
     case loan_state:
-        if(player_money <= 0){
+        if(player_money <= 0 && is_up){
+            serial_println("how much would you like to borrow?");
+            serial_println("currently borrowed");
+            serial_println(player_loan);
             state = loan_state;
         }
         else{
@@ -341,7 +350,7 @@ int TickFtn_Bet(int state){
         break;
     case bet_state:
         serial_println("do you want to make a bet");
-        if(!((PINC >> 3)&0x01)){
+        if(!((PINC >> 2)&0x01)){
             serial_println("you bet 100 dollars");
             player_money = player_money - 100;
             serial_println(player_money);
@@ -356,186 +365,184 @@ int TickFtn_Bet(int state){
     return state;
 }
 
-// enum card_state{idle_card, suit_state, value_state};
-int TickFtn_Card(int state){
-    switch (state)
-    {
-    case idle_card:
-        cardCount = 52;
-        dealer_suit = 0;
-        dealer_face = 0;
-        player_suit = 0;
-        player_face = 0;
-        is_bet = 0;
-        state = card_deal;
-    break;
+// // enum card_state{idle_card, suit_state, value_state};
+// int TickFtn_Card(int state){
+//     switch (state)
+//     {
+//     case idle_card:
+//         cardCount = 52;
+//         dealer_suit = 0;
+//         dealer_face = 0;
+//         player_suit = 0;
+//         player_face = 0;
+//         state = card_deal;
+//     break;
 
-    case card_deal:
-        if(is_up){
-            dealer_suit = suits[rand()%3];
-            player_suit = suits[rand()%3];
-            state = suit_state;
-        }
-        else{
-            state = idle_card;
-        }
-    break;
+//     case card_deal:
+//         if(is_up){
+//             dealer_suit = suits[rand()%3];
+//             player_suit = suits[rand()%3];
+//             state = suit_state;
+//         }
+//         else{
+//             state = idle_card;
+//         }
+//     break;
 
-    case suit_state:
-        dealer_face = card_values[rand()%13];
-        player_face = card_values[rand()%13];
-        state = value_state;
-    break;
+//     case suit_state:
+//         dealer_face = card_values[rand()%13];
+//         player_face = card_values[rand()%13];
+//         state = value_state;
+//     break;
 
-    case value_state:
-        state = idle_card;
-    break;
+//     case value_state:
+//         state = idle_card;
+//     break;
 
-    default:
-        break;
-    }
+//     default:
+//         break;
+//     }
 
-    switch (state)
-    {
-    case idle_card:
-    break;
+//     switch (state)
+//     {
+//     case idle_card:
+//     break;
 
-    case card_deal:
-        serial_println(dealer_cardF);
-        serial_println(dealer_card);
-        serial_println("-------------");
-        serial_println(player_cardF);
-        serial_println(player_card);
-        if(dealer_face > player_face){
-            serial_println("dealer wins!!");
-        }
-        else if(dealer_face < player_face){
-            serial_println("Player wins!!!");
-        }
-    break;
+//     case card_deal:
+//         serial_println(dealer_cardF);
+//         serial_println(dealer_card);
+//         serial_println("-------------");
+//         serial_println(player_cardF);
+//         serial_println(player_card);
+//         if(dealer_face > player_face){
+//             serial_println("dealer wins!!");
+//         }
+//         else if(dealer_face < player_face){
+//             serial_println("Player wins!!!");
+//         }
+//     break;
 
 
-    case suit_state:
-        if( dealer_suit == 1){
-            dealer_card = "clubs";
-        }
-        else if(dealer_suit == 2){
-            dealer_card = "hearts";
-        }
-        else if(dealer_suit == 3){
-            dealer_card = "diamonds";
-        }
-        else{
-            dealer_card = "spades";
-        }
-        if( player_suit == 1){
-            player_card = "clubs";
-        }
-        else if(player_suit == 2){
-            player_card = "hearts";
-        }
-        else if(player_suit == 3){
-            player_card = "diamonds";
-        }
-        else{
-            player_card = "spades";
-        }
-    break;
+//     case suit_state:
+//         if( dealer_suit == 1){
+//             dealer_card = "clubs";
+//         }
+//         else if(dealer_suit == 2){
+//             dealer_card = "hearts";
+//         }
+//         else if(dealer_suit == 3){
+//             dealer_card = "diamonds";
+//         }
+//         else{
+//             dealer_card = "spades";
+//         }
+//         if( player_suit == 1){
+//             player_card = "clubs";
+//         }
+//         else if(player_suit == 2){
+//             player_card = "hearts";
+//         }
+//         else if(player_suit == 3){
+//             player_card = "diamonds";
+//         }
+//         else{
+//             player_card = "spades";
+//         }
+//     break;
 
-    case value_state:
-    is_bet = 1;
-    if( dealer_face == 1){
-            dealer_cardF = "Ace";
-        }
-        else if(dealer_face == 2){
-            dealer_cardF = "2 of";
-        }
-        else if(dealer_face == 3){
-            dealer_cardF = "3 of";
-        }
-        else if(dealer_face == 4){
-            dealer_cardF = "4 of";
-        }
-        else if(dealer_face == 5){
-            dealer_cardF = "5 of";
-        }
-        else if(dealer_face == 6){
-            dealer_cardF = "6 of";
-        }
-        else if(dealer_face == 7){
-            dealer_cardF = "7 of";
-        }
-        else if(dealer_face == 8){
-            dealer_cardF = "8 of";
-        }
-        else if(dealer_face == 9){
-            dealer_cardF = "3 of";
-        }
-        else if(dealer_face == 10){
-            dealer_cardF = "10 of";
-        }
-        else if(dealer_face == 11){
-            dealer_cardF = "Jack of";
-        }
-        else if(dealer_face == 12){
-            dealer_cardF = "Queen of";
-        }
-        else if(dealer_face == 13){
-            dealer_cardF = "King of";
-        }
-        else{
-            dealer_cardF = "";
-        }
-        if( player_face == 1){
-            player_cardF = "Ace of";
-        }
-        else if(player_face == 2){
-            player_cardF = "2 of";
-        }
-        else if(player_face == 3){
-            player_cardF = "3 of";
-        }
-        else if(player_face == 4){
-            player_cardF = "4 of";
-        }
-        else if(player_face == 5){
-            player_cardF = "5 of";
-        }
-        else if(player_face == 6){
-            player_cardF = "6 of";
-        }
-        else if(player_face == 7){
-            player_cardF = "7 of";
-        }
-        else if(player_face == 8){
-            player_cardF = "8 of";
-        }
-        else if(player_face == 9){
-            player_cardF = "9 of";
-        }
-        else if(player_face == 10){
-            player_cardF = "10 of";
-        }
-        else if(player_face == 11){
-            player_cardF = "Jack of";
-        }
-        else if(player_face == 12){
-            player_cardF = "Queen of";
-        }
-        else if(player_face == 13){
-            player_cardF = "King of";
-        }
-        else{
-            player_cardF = "";
-        }
-    break;
+//     case value_state:
+//     if( dealer_face == 1){
+//             dealer_cardF = "Ace";
+//         }
+//         else if(dealer_face == 2){
+//             dealer_cardF = "2 of";
+//         }
+//         else if(dealer_face == 3){
+//             dealer_cardF = "3 of";
+//         }
+//         else if(dealer_face == 4){
+//             dealer_cardF = "4 of";
+//         }
+//         else if(dealer_face == 5){
+//             dealer_cardF = "5 of";
+//         }
+//         else if(dealer_face == 6){
+//             dealer_cardF = "6 of";
+//         }
+//         else if(dealer_face == 7){
+//             dealer_cardF = "7 of";
+//         }
+//         else if(dealer_face == 8){
+//             dealer_cardF = "8 of";
+//         }
+//         else if(dealer_face == 9){
+//             dealer_cardF = "3 of";
+//         }
+//         else if(dealer_face == 10){
+//             dealer_cardF = "10 of";
+//         }
+//         else if(dealer_face == 11){
+//             dealer_cardF = "Jack of";
+//         }
+//         else if(dealer_face == 12){
+//             dealer_cardF = "Queen of";
+//         }
+//         else if(dealer_face == 13){
+//             dealer_cardF = "King of";
+//         }
+//         else{
+//             dealer_cardF = "";
+//         }
+//         if( player_face == 1){
+//             player_cardF = "Ace of";
+//         }
+//         else if(player_face == 2){
+//             player_cardF = "2 of";
+//         }
+//         else if(player_face == 3){
+//             player_cardF = "3 of";
+//         }
+//         else if(player_face == 4){
+//             player_cardF = "4 of";
+//         }
+//         else if(player_face == 5){
+//             player_cardF = "5 of";
+//         }
+//         else if(player_face == 6){
+//             player_cardF = "6 of";
+//         }
+//         else if(player_face == 7){
+//             player_cardF = "7 of";
+//         }
+//         else if(player_face == 8){
+//             player_cardF = "8 of";
+//         }
+//         else if(player_face == 9){
+//             player_cardF = "9 of";
+//         }
+//         else if(player_face == 10){
+//             player_cardF = "10 of";
+//         }
+//         else if(player_face == 11){
+//             player_cardF = "Jack of";
+//         }
+//         else if(player_face == 12){
+//             player_cardF = "Queen of";
+//         }
+//         else if(player_face == 13){
+//             player_cardF = "King of";
+//         }
+//         else{
+//             player_cardF = "";
+//         }
+//     break;
 
-    default:
-        break;
-    }
+//     default:
+//         break;
+//     }
 
-    return state;
-}
+//     return state;
+// }
 
 // enum Back_state{idleMusic_state, note_state, play_state};
 int TickFtn_back(int state){
