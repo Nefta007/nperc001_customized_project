@@ -28,7 +28,7 @@ my own original work.
 #define D4_Sharp 6430 //311
 #define C4_Sharp 7219 // 277
 
-#define NUM_TASKS 3//4 // TODO: Change to the number of tasks being used
+#define NUM_TASKS 4 // TODO: Change to the number of tasks being used
 // main background song
 int I_Want_Billions[45] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat};
 int I_want_Time[45] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8, 1, 1, 1, 1, 1, 1, 2, 1, 2, 4, 1, 2, 1, 4, 2, 2, 2, 2, 2, 2,2 ,2 ,6};
@@ -39,10 +39,6 @@ int Run_Away_Time[41] = {2, 2, 1, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 4, 1
 
 
 int suits[4] = {1,2,3,4};
-// int club_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
-// int heart_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
-// int diamond_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
-// int spade_cards[] = {1,2,3,4,5,6,7,8,9,10,11};
 int card_values[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
 
 char *D_Card_Suits[4] = {"Clubs","Hearts","Spades","Diamonds"};
@@ -79,8 +75,9 @@ unsigned int player_face;
 unsigned int dealer_face;
 unsigned char is_bet;
 unsigned char newGame;
+unsigned char game_start;
 unsigned char player_limit;
-const char *temp_bet;
+int temp_bet;
 char *dealer_card;
 char *player_card;
 char *dealer_cardF;
@@ -103,51 +100,51 @@ const unsigned long Background_Period = 200;
 const unsigned long Bet_Period = 1000;
 
 const unsigned long Direction_Period = 500;
-const unsigned long GCD_PERIOD = findGCD(JS_Period, Bet_Period); // TODO:Set the GCD Period
+const unsigned long GCD_PERIOD = findGCD(JS_Period, D_Card_Period); // TODO:Set the GCD Period
 
 task tasks[NUM_TASKS]; // declared task array with 5 tasks
 
-void HardwareReset()
-{
-    PORTD = SetBit(PORTD, 4, 0);// setResetPinToLow;
-    _delay_ms(200);
-    PORTD = SetBit(PORTD, 4, 1);// setResetPinToHigh;
-    _delay_ms(200);
-}
+// void HardwareReset()
+// {
+//     PORTD = SetBit(PORTD, 4, 0);// setResetPinToLow;
+//     _delay_ms(200);
+//     PORTD = SetBit(PORTD, 4, 1);// setResetPinToHigh;
+//     _delay_ms(200);
+// }
 
-void ST7735_init()
-{
-    HardwareReset();
-    PORTB = SetBit(PORTB, 2, 0); //cs
-    PORTD = SetBit(PORTD, 5, 0); //a0
-    SPI_SEND(0x01);// Send_Command(SWRESET);
-    _delay_ms(150);
-    SPI_SEND(0x11);// Send_Command(SLPOUT);
-    _delay_ms(200);
-    SPI_SEND(0x3A);// Send_Command(COLMOD);
-    PORTD = SetBit(PORTD, 5, 1); //a0
-    SPI_SEND(0x06);// Send_Data(0x06); // for 18 bit color mode. You can pick any color mode you want
-    _delay_ms(10);
-    // Send_Command(DISPON);
-    PORTD = SetBit(PORTD, 5, 0); //a0
-    SPI_SEND(0x29);// Send_Command(DISPON);
-    _delay_ms(200);
-    //set x lines
-    SPI_SEND(0x2A);
-    PORTD = SetBit(PORTD, 5, 1); //a0
-    _delay_ms(200);
-    SPI_SEND(0x00);
-    SPI_SEND(0x11);
-    _delay_ms(200);
-    SPI_SEND(0x00);
-    SPI_SEND(0xFF);
-    _delay_ms(200);
-    PORTD = SetBit(PORTD, 5, 0); //a0
-    SPI_SEND(0x2C);
-    _delay_ms(200);
-    PORTD = SetBit(PORTD, 5, 1); //a0
+// void ST7735_init()
+// {
+//     HardwareReset();
+//     PORTB = SetBit(PORTB, 2, 0); //cs
+//     PORTD = SetBit(PORTD, 5, 0); //a0
+//     SPI_SEND(0x01);// Send_Command(SWRESET);
+//     _delay_ms(150);
+//     SPI_SEND(0x11);// Send_Command(SLPOUT);
+//     _delay_ms(200);
+//     SPI_SEND(0x3A);// Send_Command(COLMOD);
+//     PORTD = SetBit(PORTD, 5, 1); //a0
+//     SPI_SEND(0x06);// Send_Data(0x06); // for 18 bit color mode. You can pick any color mode you want
+//     _delay_ms(10);
+//     // Send_Command(DISPON);
+//     PORTD = SetBit(PORTD, 5, 0); //a0
+//     SPI_SEND(0x29);// Send_Command(DISPON);
+//     _delay_ms(200);
+//     //set x lines
+//     SPI_SEND(0x2A);
+//     PORTD = SetBit(PORTD, 5, 1); //a0
+//     _delay_ms(200);
+//     SPI_SEND(0x00);
+//     SPI_SEND(0x11);
+//     _delay_ms(200);
+//     SPI_SEND(0x00);
+//     SPI_SEND(0xFF);
+//     _delay_ms(200);
+//     PORTD = SetBit(PORTD, 5, 0); //a0
+//     SPI_SEND(0x2C);
+//     _delay_ms(200);
+//     PORTD = SetBit(PORTD, 5, 1); //a0
 
-}
+// }
 
 void TimerISR()
 {
@@ -166,19 +163,17 @@ int stages[8] = {0b0001, 0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001}
 
 // TODO: Create your tick functions for each task
 
-// enum direction_state{idle_direction, CW_Direction, CCW_Direction};
-// int TickFtn_direction(int state);
 enum JS_state{idle_state, up_state, down_state};
 int TickFtn_JS(int state);
 
 enum Back_state{idleMusic_state, note_state, play_state};
 int TickFtn_back(int state);
 
-enum bet_state{idle_money, bet_state, B_check_state, loan_state, L_check_state, money_state};
+enum bet_state{idle_money, betting_state, loan_state, money_state};
 int TickFtn_Bet(int state);
 
-// enum card_state{D_idle_card, D_suit_state, D_face_state, D_val_state};
-// int TickFtn_Dealer(int state);
+enum card_state{D_idle_card, D_suit_state, D_face_state, D_val_state};
+int TickFtn_Dealer(int state);
 
 
 int main(void)
@@ -194,8 +189,8 @@ int main(void)
     DDRB = 0b111111; PORTB = 0b000000;
     DDRD = 0b11111111; PORTD = 0b00000000;
     serial_init(9600);
-    SPI_INIT();
-    ST7735_init();
+    // SPI_INIT();
+    // ST7735_init();
 
     // //TODO: Initialize the buzzer timer/pwm(timer0)
     OCR0A = 128; // sets duty cycle to 50% since TOP is always 256
@@ -231,11 +226,11 @@ int main(void)
     tasks[i].period = Bet_Period;
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_Bet;
-    // i++;
-    // tasks[i].state = D_idle_card;
-    // tasks[i].period = D_Card_Period;
-    // tasks[i].elapsedTime = tasks[i].period;
-    // tasks[i].TickFct = &TickFtn_Dealer;
+    i++;
+    tasks[i].state = D_idle_card;
+    tasks[i].period = D_Card_Period;
+    tasks[i].elapsedTime = tasks[i].period;
+    tasks[i].TickFct = &TickFtn_Dealer;
     
     
 
@@ -244,11 +239,6 @@ int main(void)
 
     while (1)
     {
-        // for(int i = 0; i<I_Want_Billions[i]; i++){
-        //     ICR1 = I_Want_Billions[i];
-        //     OCR1A = ICR1/2;
-        //     _delay_ms(500);
-        // }
     }
 
     return 0;
@@ -325,148 +315,52 @@ int TickFtn_JS(int state)
     return state;
 }
 
-// enum bet_state{idle_money, bet_state, loan_state};
-// int TickFtn_Bet(int state){
-//     switch (state)
-//     {
-//     case idle_money:
-//         player_money = 1000;
-//         player_bet = 0;
-//         player_loan = 0;
-//         is_bet = 0;
-//         if(is_up){
-//             lcd_clear();
-//             lcd_write_str("Press up to ");
-//             lcd_goto_xy(1,0);
-//             lcd_write_str("increase bet");
-//             serial_println("press up to increase current bet");
-//             state = bet_state;
-//         }
-//         else{
-//             state = idle_money;
-//         }
-//         break;
-//     case bet_state:
-//         if(player_money > 0 && is_up){
-//             player_bet = player_bet + 100;
-//             dealer_bet = player_bet;
-//             lcd_goto_xy(1,0);
-//             lcd_write_str("increased by");
-//             lcd_write_str("100");
-//             serial_println("current bet is");
-//             serial_println(player_bet);
-//             // serial_println(is_bet);
-//             state = bet_state;
-//         }
-//         else if(player_money <= 0){
-//             serial_println("how much would you like to borrow?");
-//             player_loan = 0;
-//             player_bet = 0;
-//             is_bet = 0;
-//             state = loan_state;
-//         }
-//         break;
-//     case loan_state:
-//         if(is_up){
-//             serial_println("currently borrowed");
-//             serial_println(player_loan);
-//             state = loan_state;
-//         }
-//         else if(is_down){
-//             state = idle_money;
-//         }
-//         else if(player_loan > 0 && !((PINC >> 2)&0x01)){
-//             is_bet = 0;
-//             player_money = player_loan;
-//             state = bet_state;
-//         }
-//         break;
-
-//     default:
-//         break;
-//     }
-//     switch (state)
-//     {
-//     case idle_money:
-//         break;
-//     case bet_state:
-//         //serial_println("do you want to make a bet");
-//         if(!((PINC >> 2)&0x01)){
-//                 is_bet = 1;
-//                 serial_println(is_bet);
-//         }
-//         if(player_loss){
-//             player_money = player_money - player_bet;
-//         }
-//         else if(player_win){
-//             player_money = player_money + dealer_bet;
-//         }
-//         break;
-//     case loan_state:
-//         player_loan = player_loan + 100;
-//         break;
-//     default:
-//         break;
-//     }
-//     return state;
-// }
-
-// enum bet_state{idle_money, bet_state, B_check_state, loan_state, L_check_state, money_state};
+// enum bet_state{idle_money, betting_state, loan_state, money_state};
 int TickFtn_Bet(int state){
     switch (state)
     {
     case idle_money:
-        if(!is_up){
+        if (!is_up)
+        {
+            lcd_clear();
+            lcd_write_str("Place Bets");
             state = idle_money;
         }
         else if(is_up){
+            lcd_clear();
             player_money = 1000;
             player_bet = 0;
             player_loan = 0;
-            dealer_bet = 0;
-            t = 0;
-            state = bet_state;
-            lcd_clear();
-            lcd_write_str("Place Bets");
+            state = betting_state;
         }
     break;
 
-    case bet_state:
-        if (player_money > 0 && (is_up))
+    case betting_state:
+        if (is_up || is_down)
         {
-            state = bet_state;
+            state = betting_state;
         }
-        else{
-            t = 0;
+        else if (!((PINC >> 2) & 0x01))
+        {
             lcd_clear();
-            state = B_check_state;
-        }
-    break;
-
-    case B_check_state:
-        if(t <= 3){
-            state = B_check_state;
-        }
-        else if(player_limit || t > 3){
-            t = 0;
-            lcd_clear();
-            newGame = 0;
+            lcd_write_str("Game Start!");
+            serial_println("moving on to money");
+            game_start = 1;
             state = money_state;
-        }
-        else if(is_up){
-            lcd_clear();
-            state = bet_state;
         }
     break;
 
     case money_state:
         if(!newGame && player_money > 0){
+            serial_println("were in the money");
             state = money_state;
         }
         else if(newGame && player_money > 0){
-            state = bet_state;
+            serial_println("going back to betting");
+            state = betting_state;
         }
         else if(player_money <= 0){
+            serial_println("going to get loans");
             lcd_clear();
             lcd_write_str("Up = Loan");
             lcd_goto_xy(1,0);
@@ -477,25 +371,16 @@ int TickFtn_Bet(int state){
 
     case loan_state:
         if(is_up){
+            serial_println("still getting loans");
             state = loan_state;
         }
         else if(is_down){
+            serial_println("going to idle");
             state = idle_money;
         }
-        else{
-            t = 0;
-            lcd_clear();
-            state = L_check_state;
-        }
-    break;
-
-    case L_check_state:
-        if(t <= 3 && !is_up){
-            state = L_check_state;
-        }
-        else if(t > 3){
-            t = 0;
+        else if(!((PINC >> 2)&0x01)){
             player_money = player_loan;
+            serial_println("going to money handler");
             state = money_state;
         }
     break;
@@ -509,65 +394,132 @@ int TickFtn_Bet(int state){
     case idle_money:
     break;
 
-    case bet_state:
-        if (is_up)
+    case betting_state:
+        if(is_up)
         {
+            serial_println("still her in betting");
             player_bet = player_bet + 100;
             serial_println(player_bet);
+            lcd_clear();
+            lcd_write_str("your total");
+            lcd_goto_xy(1, 0);
+            lcd_write_str("bet is");
+            if (player_bet == 0)
+            {
+                lcd_write_str(" 0");
+            }
+            else if (player_bet == 100)
+            {
+                lcd_write_str(" 100");
+            }
+            else if (player_bet == 200)
+            {
+                lcd_write_str(" 200");
+            }
+            else if (player_bet == 300)
+            {
+                lcd_write_str(" 300");
+            }
+            else if (player_bet == 400)
+            {
+                lcd_write_str(" 400");
+            }
+            else if (player_bet == 500)
+            {
+                lcd_write_str(" 500");
+            }
+            else if (player_bet == 600)
+            {
+                lcd_write_str(" 600");
+            }
+            else if (player_bet == 700)
+            {
+                lcd_write_str(" 700");
+            }
+            else if (player_bet == 800)
+            {
+                lcd_write_str(" 800");
+            }
+            else if (player_bet == 900)
+            {
+                lcd_write_str(" 900");
+            }
+            else if (player_bet == 1000)
+            {
+                lcd_write_str(" 1000");
+            }
+            else if (player_bet > 1000)
+            {
+                lcd_clear();
+                lcd_write_str("Limit reached");
+                lcd_goto_xy(1, 0);
+                lcd_write_str("BET = 1000");
+                player_bet = 1000;
+                player_limit = 1;
+            }
         }
-        // else if(is_down){
-        //     player_bet = player_bet - 100;
-        //     serial_println(player_bet);
-        // }
-    break;
-
-    case B_check_state:
-    serial_println(player_bet);
-        i++;
-        // lcd_write_str("your total");
-        // lcd_goto_xy(1,0);
-        // lcd_write_str("bet is ");
-        // if(player_bet == 100){
-        //     temp_bet = "100";
-        // }
-        // else if( player_bet == 200){
-        //     temp_bet = "200";
-        // }
-        // else if( player_bet == 300){
-        //     temp_bet = "300";
-        // }
-        // else if( player_bet == 400){
-        //     temp_bet = "400";
-        // }
-        // else if( player_bet == 500){
-        //     temp_bet = "500";
-        // }
-        // else if( player_bet == 600){
-        //     temp_bet = "600";
-        // }
-        // else if( player_bet == 700){
-        //     temp_bet = "700";
-        // }
-        // else if( player_bet == 800){
-        //     temp_bet = "800";
-        // }
-        // else if( player_bet == 900){
-        //     temp_bet = "900";
-        // }
-        // else if (player_bet == 1000)
-        // {
-        //     temp_bet = "1000";
-        // }
-        // else if(player_bet > 1000){
-        //     lcd_clear();
-        //     lcd_write_str("Limit reached");
-        //     lcd_goto_xy(1,0);
-        //     lcd_write_str("BET = 1000");
-        //     player_bet = 1000;
-        //     player_limit = 1;
-        // }
-        lcd_clear();
-        //lcd_write_str(temp_bet);
+        else if(is_down){
+            serial_println("still her in betting");
+            player_bet = player_bet - 100;
+            serial_println(player_bet);
+            lcd_clear();
+            lcd_write_str("your total");
+            lcd_goto_xy(1, 0);
+            lcd_write_str("bet is");
+            if (player_bet == 0)
+            {
+                lcd_write_str(" 0");
+            }
+            else if (player_bet == 100)
+            {
+                lcd_write_str(" 100");
+            }
+            else if (player_bet == 200)
+            {
+                lcd_write_str(" 200");
+            }
+            else if (player_bet == 300)
+            {
+                lcd_write_str(" 300");
+            }
+            else if (player_bet == 400)
+            {
+                lcd_write_str(" 400");
+            }
+            else if (player_bet == 500)
+            {
+                lcd_write_str(" 500");
+            }
+            else if (player_bet == 600)
+            {
+                lcd_write_str(" 600");
+            }
+            else if (player_bet == 700)
+            {
+                lcd_write_str(" 700");
+            }
+            else if (player_bet == 800)
+            {
+                lcd_write_str(" 800");
+            }
+            else if (player_bet == 900)
+            {
+                lcd_write_str(" 900");
+            }
+            else if (player_bet == 1000)
+            {
+                lcd_write_str(" 1000");
+            }
+            else if (player_bet > 1000)
+            {
+                lcd_clear();
+                lcd_write_str("Limit reached");
+                lcd_goto_xy(1, 0);
+                lcd_write_str("BET = 1000");
+                player_bet = 1000;
+                player_limit = 1;
+            }
+        }
     break;
 
     case money_state:
@@ -584,55 +536,99 @@ int TickFtn_Bet(int state){
 
     case loan_state:
         player_loan = player_loan + 100;
-    break;
-
-    case L_check_state:
         lcd_write_str("Total Loan");
         lcd_goto_xy(1,0);
-        // if(player_loan == 100){
-        //    lcd_write_str("$100");
-        // }
-        // else if( player_loan == 200){
-        //     lcd_write_str("$200");
-        // }
-        // else if( player_loan == 300){
-        //     lcd_write_str("$300");
-        // }
-        // else if( player_loan == 400){
-        //     lcd_write_str("$400");
-        // }
-        // else if( player_loan == 500){
-        //     lcd_write_str("$500");
-        // }
-        // else if( player_loan == 600){
-        //     lcd_write_str("$600");
-        // }
-        // else if( player_loan == 600){
-        //     lcd_write_str("$600");
-        // }
-        // else if( player_loan == 700){
-        //     lcd_write_str("$700");
-        // }
-        // else if( player_loan == 800){
-        //     lcd_write_str("$800");
-        // }
-        // else if( player_loan == 900){
-        //     lcd_write_str("$900");
-        // }
-        // else if (player_loan == 1000)
-        // {
-        //     lcd_write_str("$1000");
-        // }
-        // else if(player_loan> 1000){
-        //     lcd_clear;
-        //     lcd_write_str("Limit reached");
-        //     lcd_goto_xy(1,0);
-        //     lcd_write_str("Loan = 1000");
-        //     player_loan = 1000;
-        //     player_limit = 1;
-        // }
-        t++;
+        if(player_loan == 100){
+           lcd_write_str("$100");
+        }
+        else if( player_loan == 200){
+            lcd_write_str("$200");
+        }
+        else if( player_loan == 300){
+            lcd_write_str("$300");
+        }
+        else if( player_loan == 400){
+            lcd_write_str("$400");
+        }
+        else if( player_loan == 500){
+            lcd_write_str("$500");
+        }
+        else if( player_loan == 600){
+            lcd_write_str("$600");
+        }
+        else if( player_loan == 600){
+            lcd_write_str("$600");
+        }
+        else if( player_loan == 700){
+            lcd_write_str("$700");
+        }
+        else if( player_loan == 800){
+            lcd_write_str("$800");
+        }
+        else if( player_loan == 900){
+            lcd_write_str("$900");
+        }
+        else if (player_loan == 1000)
+        {
+            lcd_write_str("$1000");
+        }
+        else if(player_loan> 1000){
+            lcd_clear;
+            lcd_write_str("Limit reached");
+            lcd_goto_xy(1,0);
+            lcd_write_str("Loan = 1000");
+            player_loan = 1000;
+            // player_limit = 1;
+        }
     break;
+
+    // case L_check_state:
+        // lcd_write_str("Total Loan");
+        // lcd_goto_xy(1,0);
+        // // if(player_loan == 100){
+        // //    lcd_write_str("$100");
+        // // }
+        // // else if( player_loan == 200){
+        // //     lcd_write_str("$200");
+        // // }
+        // // else if( player_loan == 300){
+        // //     lcd_write_str("$300");
+        // // }
+        // // else if( player_loan == 400){
+        // //     lcd_write_str("$400");
+        // // }
+        // // else if( player_loan == 500){
+        // //     lcd_write_str("$500");
+        // // }
+        // // else if( player_loan == 600){
+        // //     lcd_write_str("$600");
+        // // }
+        // // else if( player_loan == 600){
+        // //     lcd_write_str("$600");
+        // // }
+        // // else if( player_loan == 700){
+        // //     lcd_write_str("$700");
+        // // }
+        // // else if( player_loan == 800){
+        // //     lcd_write_str("$800");
+        // // }
+        // // else if( player_loan == 900){
+        // //     lcd_write_str("$900");
+        // // }
+        // // else if (player_loan == 1000)
+        // // {
+        // //     lcd_write_str("$1000");
+        // // }
+        // // else if(player_loan> 1000){
+        // //     lcd_clear;
+        // //     lcd_write_str("Limit reached");
+        // //     lcd_goto_xy(1,0);
+        // //     lcd_write_str("Loan = 1000");
+        // //     player_loan = 1000;
+        // //     player_limit = 1;
+        // // }
+    //     t++;
+    // break;
     default:
     break;
     }
