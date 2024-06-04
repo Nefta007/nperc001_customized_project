@@ -79,6 +79,8 @@ unsigned int player_face;
 unsigned int dealer_face;
 unsigned char is_bet;
 unsigned char newGame;
+unsigned char player_limit;
+const char *temp_bet;
 char *dealer_card;
 char *player_card;
 char *dealer_cardF;
@@ -422,12 +424,15 @@ int TickFtn_Bet(int state){
             player_bet = 0;
             player_loan = 0;
             dealer_bet = 0;
+            t = 0;
             state = bet_state;
+            lcd_clear();
+            lcd_write_str("Place Bets");
         }
     break;
 
     case bet_state:
-        if (player_money > 0 && (is_down || is_up))
+        if (player_money > 0 && (is_up))
         {
             state = bet_state;
         }
@@ -439,13 +444,17 @@ int TickFtn_Bet(int state){
     break;
 
     case B_check_state:
-        if(t <= 3 && (!is_down || !is_up)){
+        if(t <= 3){
             state = B_check_state;
         }
-        else if(t > 3 && (!is_down || !is_up)){
+        else if(player_limit || t > 3){
+            t = 0;
+            lcd_clear();
+            newGame = 0;
             state = money_state;
         }
-        else if((is_down || is_up)){
+        else if(is_up){
+            lcd_clear();
             state = bet_state;
         }
     break;
@@ -458,6 +467,10 @@ int TickFtn_Bet(int state){
             state = bet_state;
         }
         else if(player_money <= 0){
+            lcd_clear();
+            lcd_write_str("Up = Loan");
+            lcd_goto_xy(1,0);
+            lcd_write_str("down = stop");
             state = loan_state;
         }
     break;
@@ -481,6 +494,7 @@ int TickFtn_Bet(int state){
             state = L_check_state;
         }
         else if(t > 3){
+            t = 0;
             player_money = player_loan;
             state = money_state;
         }
@@ -493,81 +507,136 @@ int TickFtn_Bet(int state){
     switch (state)
     {
     case idle_money:
-        if(!is_up){
-            state = idle_money;
-        }
-        else if(is_up){
-            player_money = 1000;
-            player_bet = 0;
-            player_loan = 0;
-            dealer_bet = 0;
-            state = bet_state;
-        }
     break;
 
     case bet_state:
-        if (player_money > 0 && (is_down || is_up))
+        if (is_up)
         {
-            state = bet_state;
+            player_bet = player_bet + 100;
+            serial_println(player_bet);
         }
-        else{
-            t = 0;
-            lcd_clear();
-            state = B_check_state;
-        }
+        // else if(is_down){
+        //     player_bet = player_bet - 100;
+        //     serial_println(player_bet);
+        // }
     break;
 
     case B_check_state:
-        if(t <= 3 && (!is_down || !is_up)){
-            state = B_check_state;
-        }
-        else if(t > 3 && (!is_down || !is_up)){
-            state = money_state;
-        }
-        else if((is_down || is_up)){
-            state = bet_state;
-        }
+    serial_println(player_bet);
+        i++;
+        // lcd_write_str("your total");
+        // lcd_goto_xy(1,0);
+        // lcd_write_str("bet is ");
+        // if(player_bet == 100){
+        //     temp_bet = "100";
+        // }
+        // else if( player_bet == 200){
+        //     temp_bet = "200";
+        // }
+        // else if( player_bet == 300){
+        //     temp_bet = "300";
+        // }
+        // else if( player_bet == 400){
+        //     temp_bet = "400";
+        // }
+        // else if( player_bet == 500){
+        //     temp_bet = "500";
+        // }
+        // else if( player_bet == 600){
+        //     temp_bet = "600";
+        // }
+        // else if( player_bet == 700){
+        //     temp_bet = "700";
+        // }
+        // else if( player_bet == 800){
+        //     temp_bet = "800";
+        // }
+        // else if( player_bet == 900){
+        //     temp_bet = "900";
+        // }
+        // else if (player_bet == 1000)
+        // {
+        //     temp_bet = "1000";
+        // }
+        // else if(player_bet > 1000){
+        //     lcd_clear();
+        //     lcd_write_str("Limit reached");
+        //     lcd_goto_xy(1,0);
+        //     lcd_write_str("BET = 1000");
+        //     player_bet = 1000;
+        //     player_limit = 1;
+        // }
+        lcd_clear();
+        //lcd_write_str(temp_bet);
     break;
 
     case money_state:
-        if(!newGame && player_money > 0){
-            state = money_state;
+        if(player_loss){
+            player_money = player_money - player_bet;
         }
-        else if(newGame && player_money > 0){
-            state = bet_state;
+        else if(player_win){
+            player_money = player_money + player_bet;
         }
-        else if(player_money <= 0){
-            state = loan_state;
+        else if(!((PINC >> 2)&0x01)){
+            newGame = 1;
         }
     break;
 
     case loan_state:
-        if(is_up){
-            state = loan_state;
-        }
-        else if(is_down){
-            state = idle_money;
-        }
-        else{
-            t = 0;
-            lcd_clear();
-            state = L_check_state;
-        }
+        player_loan = player_loan + 100;
     break;
 
     case L_check_state:
-        if(t <= 3 && !is_up){
-            state = L_check_state;
-        }
-        else if(t > 3){
-            player_money = player_loan;
-            state = money_state;
-        }
+        lcd_write_str("Total Loan");
+        lcd_goto_xy(1,0);
+        // if(player_loan == 100){
+        //    lcd_write_str("$100");
+        // }
+        // else if( player_loan == 200){
+        //     lcd_write_str("$200");
+        // }
+        // else if( player_loan == 300){
+        //     lcd_write_str("$300");
+        // }
+        // else if( player_loan == 400){
+        //     lcd_write_str("$400");
+        // }
+        // else if( player_loan == 500){
+        //     lcd_write_str("$500");
+        // }
+        // else if( player_loan == 600){
+        //     lcd_write_str("$600");
+        // }
+        // else if( player_loan == 600){
+        //     lcd_write_str("$600");
+        // }
+        // else if( player_loan == 700){
+        //     lcd_write_str("$700");
+        // }
+        // else if( player_loan == 800){
+        //     lcd_write_str("$800");
+        // }
+        // else if( player_loan == 900){
+        //     lcd_write_str("$900");
+        // }
+        // else if (player_loan == 1000)
+        // {
+        //     lcd_write_str("$1000");
+        // }
+        // else if(player_loan> 1000){
+        //     lcd_clear;
+        //     lcd_write_str("Limit reached");
+        //     lcd_goto_xy(1,0);
+        //     lcd_write_str("Loan = 1000");
+        //     player_loan = 1000;
+        //     player_limit = 1;
+        // }
+        t++;
     break;
-    
     default:
     break;
     }
+    return state;
 }
 
 // enum Back_state{idleMusic_state, note_state, play_state};
