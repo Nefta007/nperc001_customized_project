@@ -28,7 +28,7 @@ my own original work.
 #define D4_Sharp 6430 //311
 #define C4_Sharp 7219 // 277
 
-#define NUM_TASKS 4 // TODO: Change to the number of tasks being used
+#define NUM_TASKS 6 // TODO: Change to the number of tasks being used
 // main background song
 int I_Want_Billions[45] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat};
 int I_want_Time[45] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8, 1, 1, 1, 1, 1, 1, 2, 1, 2, 4, 1, 2, 1, 4, 2, 2, 2, 2, 2, 2,2 ,2 ,6};
@@ -41,11 +41,11 @@ int Run_Away_Time[41] = {2, 2, 1, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 4, 1
 int suits[4] = {1,2,3,4};
 int card_values[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
 
-char *D_Card_Suits[4] = {"Clubs","Hearts","Spades","Diamonds"};
-char *D_CARD_Face[13] = {"1","2","3","4","5","6","7","8","9","10","J","Q","K"};
-int Dealer_vals[11] = {0,0,0,0,0,0,0,0,0,0,0};
+// String D_Card_Suits[4] = {"Clubs","Hearts","Spades","Diamonds"};
+// char *D_CARD_Face[13] = {"1","2","3","4","5","6","7","8","9","10","J","Q","K"};
+// int Dealer_vals[11] = {0,0,0,0,0,0,0,0,0,0,0};
 
-int value;
+// int value;
 // value = club_cards[rand()%13];
 // serial_println(value);
 
@@ -58,7 +58,8 @@ unsigned char jj;
 unsigned char k;
 unsigned char l;
 unsigned char m;
-unsigned char t;
+unsigned long t;
+unsigned long tt;
 unsigned char display_value;
 unsigned char dealer_total;
 unsigned char d_card_total;
@@ -77,7 +78,8 @@ unsigned char is_bet;
 unsigned char newGame;
 unsigned char game_start;
 unsigned char player_limit;
-int temp_bet;
+unsigned char needCards;
+// int temp_bet;
 char *dealer_card;
 char *player_card;
 char *dealer_cardF;
@@ -98,8 +100,10 @@ const unsigned long JS_Period = 100;
 const unsigned long D_Card_Period = 1000;
 const unsigned long Background_Period = 200;
 const unsigned long Bet_Period = 1000;
-
+const unsigned long timer_period = 100;
+const unsigned long timer2_period = 150;
 const unsigned long Direction_Period = 500;
+
 const unsigned long GCD_PERIOD = findGCD(JS_Period, D_Card_Period); // TODO:Set the GCD Period
 
 task tasks[NUM_TASKS]; // declared task array with 5 tasks
@@ -175,6 +179,11 @@ int TickFtn_Bet(int state);
 enum card_state{D_idle_card, D_suit_state, D_face_state, D_val_state};
 int TickFtn_Dealer(int state);
 
+enum time_state{T_idle_state, timer_state};
+int TickFtn_timer(int state);
+
+enum timer2_state{T2_idle_state, timer2_state};
+int TickFtn_timer2(int state);
 
 int main(void)
 {
@@ -231,7 +240,16 @@ int main(void)
     tasks[i].period = D_Card_Period;
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_Dealer;
-    
+    i++;
+    tasks[i].state = T_idle_state;
+    tasks[i].period = timer_period;
+    tasks[i].elapsedTime = tasks[i].period;
+    tasks[i].TickFct = &TickFtn_timer;
+    i++;
+    tasks[i].state = T2_idle_state;
+    tasks[i].period = timer2_period;
+    tasks[i].elapsedTime = tasks[i].period;
+    tasks[i].TickFct = &TickFtn_timer2;
     
 
     TimerSet(GCD_PERIOD);
@@ -344,23 +362,23 @@ int TickFtn_Bet(int state){
         {
             lcd_clear();
             lcd_write_str("Game Start!");
-            serial_println("moving on to money");
+            // serial_println("moving on to money");
             game_start = 1;
             state = money_state;
         }
     break;
 
     case money_state:
-        if(!newGame && player_money > 0){
-            serial_println("were in the money");
+        if(player_money > 0){
+            // serial_println("were in the money");
             state = money_state;
         }
         else if(newGame && player_money > 0){
-            serial_println("going back to betting");
+            // serial_println("going back to betting");
             state = betting_state;
         }
         else if(player_money <= 0){
-            serial_println("going to get loans");
+            // serial_println("going to get loans");
             lcd_clear();
             lcd_write_str("Up = Loan");
             lcd_goto_xy(1,0);
@@ -371,16 +389,16 @@ int TickFtn_Bet(int state){
 
     case loan_state:
         if(is_up){
-            serial_println("still getting loans");
+            // serial_println("still getting loans");
             state = loan_state;
         }
         else if(is_down){
-            serial_println("going to idle");
+            // serial_println("going to idle");
             state = idle_money;
         }
         else if(!((PINC >> 2)&0x01)){
             player_money = player_loan;
-            serial_println("going to money handler");
+            // serial_println("going to money handler");
             state = money_state;
         }
     break;
@@ -397,9 +415,9 @@ int TickFtn_Bet(int state){
     case betting_state:
         if(is_up)
         {
-            serial_println("still her in betting");
+            // serial_println("still her in betting");
             player_bet = player_bet + 100;
-            serial_println(player_bet);
+            // serial_println(player_bet);
             lcd_clear();
             lcd_write_str("your total");
             lcd_goto_xy(1, 0);
@@ -459,9 +477,9 @@ int TickFtn_Bet(int state){
             }
         }
         else if(is_down){
-            serial_println("still her in betting");
+            // serial_println("still her in betting");
             player_bet = player_bet - 100;
-            serial_println(player_bet);
+            // serial_println(player_bet);
             lcd_clear();
             lcd_write_str("your total");
             lcd_goto_xy(1, 0);
@@ -573,7 +591,7 @@ int TickFtn_Bet(int state){
             lcd_write_str("$1000");
         }
         else if(player_loan> 1000){
-            lcd_clear;
+            lcd_clear();
             lcd_write_str("Limit reached");
             lcd_goto_xy(1,0);
             lcd_write_str("Loan = 1000");
@@ -686,235 +704,257 @@ int TickFtn_back(int state){
     return state;
 }
 
-// // enum card_state{D_idle_card, D_suit_state, D_face_state, D_val_state};
-// int TickFtn_Dealer(int state){
-//     switch (state)
-//     {
-//     case D_idle_card:
-//         if(!is_bet){
-//             state = D_idle_card;
-//         }
-//         else if(is_bet){
-//             dealer_suit = suits[rand()%4];
-//             serial_println(dealer_suit);
-//             serial_println("first area");
-//             ii = 2;
-//             jj = 0;
-//             k = 0;
-//             l = 0;
-//             m = 0;
-//             dealer_total = 0;
-//             d_card_total = 0;
-//             display_value = 0;
-//             state = D_suit_state;
-//         }
-//         // else{
-//         //     state = D_idle_card;
-//         // }
-//     break;
+// enum card_state{D_idle_card, D_suit_state, D_face_state, D_val_state};
+int TickFtn_Dealer(int state){
+    switch (state)
+    {
+    case D_idle_card:
+        if(!game_start){
+            state = D_idle_card;
+        }
+        else{
+            ii = 1;
+            k = 0;
+            l = 0;
+            m = 0;
+            dealer_suit = 0;
+            dealer_face = 0;
+            needCards = 0;
+            dealer_total = 0;
+            d_card_total = 0;
+            // serial_println("here");
+            state = D_suit_state;
+        }
+    break;
+
+    case D_suit_state:
+        if(ii > 0){
+            // serial_println("heeree");
+            state = D_suit_state;
+        }
+        else{
+            ii = 1;
+            state = D_face_state;
+        }
+    break;
     
-//     case D_suit_state:
-//         if(ii > 0){
-//             state = D_suit_state;
-//         }
-//         else if(ii <= 0){
-//             dealer_face = card_values[rand()%13];
-//             serial_println(dealer_face);
-//             state = D_face_state;
-//         }
-//     break;
+    case D_face_state:
+        if(ii > 0){
+            state = D_face_state;
+        }
+        else{
+            if(dealer_suit == 1){
+            serial_println("clubs");
+            dealer_card = "clubs";
+            l++;
+        }
+        else if(dealer_suit == 2){
+            serial_println("hearts");
+            dealer_card = "hearts";
+            l++;
+        }
+        else if(dealer_suit == 3){
+            serial_println("spades");
+            dealer_card = "spades";
+            l++;
+        }
+        else if(dealer_suit == 4){
+            serial_println("diamonds");
+            dealer_card = "diamonds";
+            l++;
+        }
 
-//     case D_face_state:
-//         if(l > 0){
-//             state = D_face_state;
-//         }
-//         else if(l <= 0 && dealer_total <= 17){
-//             ii = 0;
-//             state = D_suit_state;
-//         }
-//         else if(dealer_total > 17){
-//             ii = 0;
-//             state = D_val_state;
-//         }
-//     break;
+        if(dealer_face == 1){
+            serial_println("A");
+            dealer_cardF = "A";
+            dealer_total = dealer_total + 11;
+            k++;
+        }
+        else if(dealer_suit == 2){
+            serial_println("2");
+            dealer_cardF = "2";
+            dealer_total = dealer_total + 2;
+            k++;
+        }
+        else if(dealer_face == 3){
+            serial_println("3");
+            dealer_cardF = "3";
+            dealer_total = dealer_total + 3;
+            k++;
+        }
+        else if(dealer_face == 4){
+            serial_println("4");
+            dealer_cardF = "4";
+            dealer_total = dealer_total + 4;
+            k++;
+        }
+        else if(dealer_face == 5){
+            serial_println("5");
+            dealer_cardF = "5";
+            dealer_total = dealer_total + 5;
+            k++;
+        }
+        else if(dealer_face == 6){
+            serial_println("6");
+            dealer_cardF = "6";
+            dealer_total = dealer_total + 6;
+            k++;
+        }
+        else if(dealer_face == 7){
+            serial_println("7");
+            dealer_cardF = "7";
+            dealer_total = dealer_total + 7;
+            k++;
+        }
+        else if(dealer_face == 8){
+            serial_println("8");
+            dealer_cardF = "8";
+            dealer_total = dealer_total + 8;
+            k++;
+        }
+        else if(dealer_face == 9){
+            serial_println("9");
+            dealer_cardF = "9";
+            dealer_total = dealer_total + 9;
+            k++;
+        }
+        else if(dealer_face == 10){
+            serial_println("10");
+            dealer_cardF = "10";
+            dealer_total = dealer_total + 10;
+            k++;
+        }
+        else if(dealer_face == 11){
+            serial_println("J");
+            dealer_cardF = "J";
+            dealer_total = dealer_total + 10;
+            k++;
+        }
+        else if(dealer_face == 12){
+            serial_println("Q");
+            dealer_cardF = "Q";
+            dealer_total = dealer_total + 10;
+            k++;
+        }
+        else if(dealer_face == 13){
+            serial_println("K");
+            dealer_cardF = "K";
+            dealer_total = dealer_total + 10;
+            k++;
+        }
+        lcd_clear();
+        lcd_write_str(dealer_cardF);
+        lcd_goto_xy(1,0);
+        lcd_write_str(dealer_card);
+        serial_println(dealer_total);
+            needCards = 1;
+            ii = 0;
+            state = D_val_state;
+        }
+    break;
 
-//     case D_val_state:
-//         if(d_card_total > 0){
-//             state = D_val_state;
-//         }
-//         else if(!is_bet){
-//             state = D_idle_card;
-//         }
-//     break;
-//     default:
-//         break;
-//     }
+    case D_val_state:
+        if(!player_limit){
+            dealer_suit = 0;
+            dealer_face = 0;
+            ii = 1;
+            needCards = 0;
+            state = D_suit_state;
+        }
+        else if(player_limit){
+            state = D_val_state;
+        }
+        else if(!game_start && player_limit){
+            needCards = 0;
+            state = D_idle_card;
+        }
+    break;
+
+    default:
+        break;
+    }
+
+    switch (state)
+    {
+    case D_idle_card:
+    break;
+
+    case D_suit_state:
+        dealer_suit = rand()%t + 1;
+        serial_println(dealer_suit);
+        ii--;
+    break;
     
-//     switch (state)
-//     {
-//     case D_idle_card:
-//     break;
+    case D_face_state:
+        dealer_face = rand()%t + 1;
+        serial_println(dealer_face);
+        d_card_total++;
+        ii--;
+    break;
+
+    case D_val_state:
+        if(dealer_total <= 17){
+            player_limit = 0;
+        }
+        else{
+            player_limit = 1;
+        }
+        
+    break;
+
+    default:
+        break;
+    }
+    return state;
+}
+
+// enum time_state{T_idle_state, timer_state};
+int TickFtn_timer(int state){
+    switch (state)
+    {
+    case T_idle_state:
+        if(is_up){
+            t = 1;
+            tt = 1;
+            state = timer_state;
+        }
+        else{
+        state = T_idle_state;
+        }
+    break;
     
-//     case D_suit_state:
-//         if(dealer_suit == 1){
-//             D_Card_Suits[k] = "clubs";
-//             serial_println(D_Card_Suits[k]);
-//             serial_println("second area");
-//             k++;
-//             l++;
-//             ii--;
-//         }
-//         else if(dealer_suit == 2){
-//             D_Card_Suits[k] = "hearts";
-//             serial_println('hearts');
-//             serial_println("third area");
-//             k++;
-//             l++;
-//             ii--;
-//         }
-//         else if(dealer_suit == 3){
-//             D_Card_Suits[k] = "spades";
-//             serial_println('spades');
-//             serial_println("fourth area");
-//             k++;
-//             l++;
-//             ii--;
-//         }
-//         else if(dealer_suit == 4){
-//             //dealer_cardF = "diamond";
-//             D_Card_Suits[k] = dealer_cardF;
-//             serial_println('diamonds');
-//             serial_println("fifth area");
-//             k++;
-//             l++;
-//             ii--;
-//         }
-//     break;
+    case timer_state:
+        if(newGame){
+            state = T_idle_state;
+        }
+        else{
+            state = timer_state;
+        }
 
-//     case D_face_state:
-//         if(dealer_face == 1){
-//             D_CARD_Face[m] = "A";
-//             display_value = 11;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 2){
-//             D_CARD_Face[m] = "2";
-//             display_value = 2;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 3){
-//             D_CARD_Face[m] = "3";
-//             display_value = 3;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 4){
-//             D_CARD_Face[m] = "4";
-//             display_value = 4;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 5){
-//             D_CARD_Face[m] = "5";
-//             display_value = 5;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 6){
-//             D_CARD_Face[m] = "6";
-//             display_value = 6;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 7){
-//             D_CARD_Face[m] = "7";
-//             display_value = 7;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 8){
-//             D_CARD_Face[m] = "8";
-//             display_value = 8;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 9){
-//             D_CARD_Face[m] = "9";
-//             display_value = 9;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 10){
-//             D_CARD_Face[m] = "10";
-//             display_value = 10;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 11){
-//             D_CARD_Face[m] = "J";
-//             display_value = 10;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 12){
-//             D_CARD_Face[m] = "Q";
-//             display_value = 10;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//         else if(dealer_face == 13){
-//             D_CARD_Face[m] = "K";
-//             display_value = 10;
-//             dealer_total = dealer_total + display_value;
-//             d_card_total++;
-//             m++;
-//             l--;
-//         }
-//     break;
+    default:
+        break;
+    }
 
-//     case D_val_state:
-//         // dealer_card = D_CARD_Face[i];
-//        //for(i = 0; i < d_card_total; i++){
-//         serial_println(D_CARD_Face[ii]);
-//         serial_println("sixth area");
-//         ii++;
-//         d_card_total--;
-//         if(ii >= 3){
-//             is_bet = 0;
-//         }
-//         //dealer_cardF = D_CARD_Face[i];
-//         //serial_println(dealer_cardF);
-//        //}
-//         // serial_println
-//     break;
-//     default:
-//         break;
-//     }
-//     return state;
-// }
+    switch (state)
+    {
+    case T_idle_state:
+    break;
+    
+    case timer_state:
+        if(t <= 4){
+            t++;
+        }
+        else if(t > 4){
+            t = 1;
+        }
+        if(tt <= 13){
+            tt++;
+        }
+        else if(tt > 13){
+            tt = 1;
+        }
+    default:
+        break;
+    }
+    return state;
+}
