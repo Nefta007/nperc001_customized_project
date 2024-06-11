@@ -75,7 +75,7 @@ unsigned char dealer_total;
 unsigned char d_card_total;
 unsigned char player_win;
 unsigned char player_loss;
-unsigned int player_money;
+int player_money;
 unsigned int player_bet;
 unsigned int player_loan;
 unsigned int dealer_bet;
@@ -90,6 +90,7 @@ unsigned char game_start;
 unsigned char player_limit;
 unsigned char needCards;
 unsigned char hit_me;
+unsigned char player_choice;
 // int temp_bet;
 char *dealer_card;
 char *player_card;
@@ -115,6 +116,7 @@ const unsigned long Bet_Period = 1000;
 const unsigned long timer_period = 100;
 const unsigned long timer2_period = 100;
 const unsigned long Direction_Period = 500;
+const unsigned long Winner_Period = 1000;
 
 const unsigned long GCD_PERIOD = findGCD(JS_Period, D_Card_Period); // TODO:Set the GCD Period
 
@@ -200,6 +202,9 @@ int TickFtn_timer2(int state);
 enum Pcard_state{P_idle_state, P_suit_state, P_face_state, P_val_state};
 int TickFtn_Player(int state);
 
+// enum Winner_state{wait_state, decide_state, display_state};
+// int TickFtn_Winner(int state);
+
 int main(void)
 {
     // TODO: initialize all your inputs and ouputs
@@ -270,6 +275,11 @@ int main(void)
     tasks[i].period = timer2_period;
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_timer2;
+    // i++;
+    // tasks[i].state = wait_state;
+    // tasks[i].period = Winner_Period;
+    // tasks[i].elapsedTime = tasks[i].period;
+    // tasks[i].TickFct = &TickFtn_Winner;
 
     TimerSet(GCD_PERIOD);
     TimerOn();
@@ -366,8 +376,10 @@ int TickFtn_Bet(int state){
         else if(is_up){
             lcd_clear();
             player_money = 1000;
+            serial_println(player_money);
             player_bet = 0;
             player_loan = 0;
+            newGame = 0;
             state = betting_state;
         }
     break;
@@ -382,6 +394,7 @@ int TickFtn_Bet(int state){
             lcd_clear();
             lcd_write_str("Game Start!");
             // serial_println("moving on to money");
+            player_choice = 0;
             game_start = 1;
             state = money_state;
         }
@@ -392,8 +405,11 @@ int TickFtn_Bet(int state){
             // serial_println("were in the money");
             state = money_state;
         }
-        else if(newGame && player_money > 0){
+        else if(newGame){
             // serial_println("going back to betting");
+            newGame = 0;
+            lcd_clear();
+            player_bet = 0;
             state = betting_state;
         }
         else if(player_money <= 0){
@@ -560,15 +576,50 @@ int TickFtn_Bet(int state){
     break;
 
     case money_state:
-        if(player_loss){
-            player_money = player_money - player_bet;
+        if (player_choice)
+        {
+            if (player_total > 21)
+            {
+                player_money = player_money - player_bet;
+                player_choice = 0;
+                serial_println(player_money);
+            }
+            else if (dealer_total > 21)
+            {
+                player_money = player_money + player_bet;
+                player_choice = 0;
+                serial_println(player_money);
+            }
+            else if (player_total > dealer_total)
+            {
+                player_money = player_money + player_bet;
+                player_choice = 0;
+                serial_println(player_money);
+            }
+            else if (player_total < dealer_total)
+            {
+                player_money = player_money - player_bet;
+                player_choice = 0;
+                serial_println(player_money);
+            }
+            if (!player_choice)
+            {
+                newGame = 1;
+                serial_println("new game");
+                
+            }
         }
-        else if(player_win){
-            player_money = player_money + player_bet;
-        }
-        else if(!((PINC >> 2)&0x01)){
-            newGame = 1;
-        }
+        
+    /////////////////////
+        // if(player_loss){
+        //     player_money = player_money - player_bet;
+        //     serial_println(player_money);
+        // }
+        // else if(player_win){
+        //     player_money = player_money + player_bet;
+        //     serial_println(player_money);
+        // }
+        
     break;
 
     case loan_state:
@@ -619,53 +670,6 @@ int TickFtn_Bet(int state){
         }
     break;
 
-    // case L_check_state:
-        // lcd_write_str("Total Loan");
-        // lcd_goto_xy(1,0);
-        // // if(player_loan == 100){
-        // //    lcd_write_str("$100");
-        // // }
-        // // else if( player_loan == 200){
-        // //     lcd_write_str("$200");
-        // // }
-        // // else if( player_loan == 300){
-        // //     lcd_write_str("$300");
-        // // }
-        // // else if( player_loan == 400){
-        // //     lcd_write_str("$400");
-        // // }
-        // // else if( player_loan == 500){
-        // //     lcd_write_str("$500");
-        // // }
-        // // else if( player_loan == 600){
-        // //     lcd_write_str("$600");
-        // // }
-        // // else if( player_loan == 600){
-        // //     lcd_write_str("$600");
-        // // }
-        // // else if( player_loan == 700){
-        // //     lcd_write_str("$700");
-        // // }
-        // // else if( player_loan == 800){
-        // //     lcd_write_str("$800");
-        // // }
-        // // else if( player_loan == 900){
-        // //     lcd_write_str("$900");
-        // // }
-        // // else if (player_loan == 1000)
-        // // {
-        // //     lcd_write_str("$1000");
-        // // }
-        // // else if(player_loan> 1000){
-        // //     lcd_clear;
-        // //     lcd_write_str("Limit reached");
-        // //     lcd_goto_xy(1,0);
-        // //     lcd_write_str("Loan = 1000");
-        // //     player_loan = 1000;
-        // //     player_limit = 1;
-        // // }
-    //     t++;
-    // break;
     default:
     break;
     }
@@ -997,6 +1001,7 @@ int TickFtn_Player(int state){
             needCards2 = 0;
             player_total = 0;
             p_card_total = 0;
+            //player_choice = 0;
             // serial_println("here");
             state = P_suit_state;
         }
@@ -1119,6 +1124,7 @@ int TickFtn_Player(int state){
         }
         lcd_clear();
         lcd_write_str(player_cardF);
+        lcd_goto_xy(0, 7);
         lcd_goto_xy(1,0);
         lcd_write_str(player_card);
         serial_println(player_total);
@@ -1171,6 +1177,9 @@ int TickFtn_Player(int state){
     case P_val_state:
         if(!((PINC >> 2) & 0x01)){
             hit_me = 1;
+        }
+        else if(is_down){
+            player_choice = 1;
         }
         else{
             hit_me = 0;
@@ -1235,3 +1244,66 @@ int TickFtn_timer2(int state){
     return state;
 }
 
+// // enum Winner_state{wait_state, decide_state, display_state};
+// int TickFtn_Winner(int state){
+//     switch (state)
+//     {
+//     case wait_state:
+//         if(player_choice){
+//             player_win = 0;
+//             player_loss = 0;
+//             state = decide_state;
+//         }
+//         else{
+//             state = wait_state;
+//         }
+//     break;
+
+//     case decide_state:
+//         state = display_state;
+//     break;
+
+//     case display_state:
+//         state = wait_state;
+//     break;
+    
+//     default:
+//         break;
+//     }
+//     switch (state)
+//     {
+//     case wait_state:
+//     break;
+
+//     case decide_state:
+//         if (player_total > 21)
+//         {
+//             player_loss = 1;
+//         }
+//         else if(dealer_total > 21){
+//             player_win = 1;
+//         }
+//         else if(player_total > dealer_total){
+//             player_win = 1;
+//         }
+//         else if(player_total < dealer_total){
+//             player_loss = 1;
+//         }
+//     break;
+
+//     case display_state:
+//         // if(player_win){
+//         //     lcd_clear();
+//         //     lcd_write_str("You win!");
+//         // }
+//         // else if(player_loss){
+//         //     lcd_clear();
+//         //     lcd_write_str("YOU LOSE HAHAHA");
+//         // }
+//     break;
+    
+//     default:
+//         break;
+//     }
+//     return state;
+// }
