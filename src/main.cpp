@@ -122,47 +122,47 @@ const unsigned long GCD_PERIOD = findGCD(JS_Period, D_Card_Period); // TODO:Set 
 
 task tasks[NUM_TASKS]; // declared task array with 5 tasks
 
-// void HardwareReset()
-// {
-//     PORTD = SetBit(PORTD, 4, 0);// setResetPinToLow;
-//     _delay_ms(200);
-//     PORTD = SetBit(PORTD, 4, 1);// setResetPinToHigh;
-//     _delay_ms(200);
-// }
+void HardwareReset()
+{
+    PORTD = SetBit(PORTD, 4, 0);// setResetPinToLow;
+    _delay_ms(200);
+    PORTD = SetBit(PORTD, 4, 1);// setResetPinToHigh;
+    _delay_ms(200);
+}
 
-// void ST7735_init()
-// {
-//     HardwareReset();
-//     PORTB = SetBit(PORTB, 2, 0); //cs
-//     PORTD = SetBit(PORTD, 5, 0); //a0
-//     SPI_SEND(0x01);// Send_Command(SWRESET);
-//     _delay_ms(150);
-//     SPI_SEND(0x11);// Send_Command(SLPOUT);
-//     _delay_ms(200);
-//     SPI_SEND(0x3A);// Send_Command(COLMOD);
-//     PORTD = SetBit(PORTD, 5, 1); //a0
-//     SPI_SEND(0x06);// Send_Data(0x06); // for 18 bit color mode. You can pick any color mode you want
-//     _delay_ms(10);
-//     // Send_Command(DISPON);
-//     PORTD = SetBit(PORTD, 5, 0); //a0
-//     SPI_SEND(0x29);// Send_Command(DISPON);
-//     _delay_ms(200);
-//     //set x lines
-//     SPI_SEND(0x2A);
-//     PORTD = SetBit(PORTD, 5, 1); //a0
-//     _delay_ms(200);
-//     SPI_SEND(0x00);
-//     SPI_SEND(0x11);
-//     _delay_ms(200);
-//     SPI_SEND(0x00);
-//     SPI_SEND(0xFF);
-//     _delay_ms(200);
-//     PORTD = SetBit(PORTD, 5, 0); //a0
-//     SPI_SEND(0x2C);
-//     _delay_ms(200);
-//     PORTD = SetBit(PORTD, 5, 1); //a0
+void ST7735_init()
+{
+    HardwareReset();
+    PORTB = SetBit(PORTB, 2, 0); //cs
+    PORTD = SetBit(PORTD, 5, 0); //a0
+    SPI_SEND(0x01);// Send_Command(SWRESET);
+    _delay_ms(150);
+    SPI_SEND(0x11);// Send_Command(SLPOUT);
+    _delay_ms(200);
+    SPI_SEND(0x3A);// Send_Command(COLMOD);
+    PORTD = SetBit(PORTD, 5, 1); //a0
+    SPI_SEND(0x06);// Send_Data(0x06); // for 18 bit color mode. You can pick any color mode you want
+    _delay_ms(10);
+    // Send_Command(DISPON);
+    PORTD = SetBit(PORTD, 5, 0); //a0
+    SPI_SEND(0x29);// Send_Command(DISPON);
+    _delay_ms(200);
+    //set x lines
+    SPI_SEND(0x2A);
+    PORTD = SetBit(PORTD, 5, 1); //a0
+    _delay_ms(200);
+    SPI_SEND(0x00);
+    SPI_SEND(0x11);
+    _delay_ms(200);
+    SPI_SEND(0x00);
+    SPI_SEND(0xFF);
+    _delay_ms(200);
+    PORTD = SetBit(PORTD, 5, 0); //a0
+    SPI_SEND(0x2C);
+    _delay_ms(200);
+    PORTD = SetBit(PORTD, 5, 1); //a0
 
-// }
+}
 
 void TimerISR()
 {
@@ -218,8 +218,8 @@ int main(void)
     DDRB = 0b111111; PORTB = 0b000000;
     DDRD = 0b11111111; PORTD = 0b00000000;
     serial_init(9600);
-    // SPI_INIT();
-    // ST7735_init();
+    SPI_INIT();
+    ST7735_init();
 
     // //TODO: Initialize the buzzer timer/pwm(timer0)
     OCR0A = 128; // sets duty cycle to 50% since TOP is always 256
