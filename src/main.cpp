@@ -124,9 +124,9 @@ task tasks[NUM_TASKS]; // declared task array with 5 tasks
 
 void HardwareReset()
 {
-    PORTD = SetBit(PORTD, 4, 0);// setResetPinToLow;
+    PORTC = SetBit(PORTC, 4, 0);// setResetPinToLow;
     _delay_ms(200);
-    PORTD = SetBit(PORTD, 4, 1);// setResetPinToHigh;
+    PORTC = SetBit(PORTC, 4, 1);// setResetPinToHigh;
     _delay_ms(200);
 }
 
@@ -134,33 +134,55 @@ void ST7735_init()
 {
     HardwareReset();
     PORTB = SetBit(PORTB, 2, 0); //cs
-    PORTD = SetBit(PORTD, 5, 0); //a0
+    PORTC = SetBit(PORTC, 3, 0); //a0
     SPI_SEND(0x01);// Send_Command(SWRESET);
     _delay_ms(150);
     SPI_SEND(0x11);// Send_Command(SLPOUT);
     _delay_ms(200);
     SPI_SEND(0x3A);// Send_Command(COLMOD);
-    PORTD = SetBit(PORTD, 5, 1); //a0
+    PORTC = SetBit(PORTC, 3, 1); //a0
     SPI_SEND(0x06);// Send_Data(0x06); // for 18 bit color mode. You can pick any color mode you want
     _delay_ms(10);
     // Send_Command(DISPON);
-    PORTD = SetBit(PORTD, 5, 0); //a0
+    PORTC = SetBit(PORTC, 3, 0); //a0
     SPI_SEND(0x29);// Send_Command(DISPON);
     _delay_ms(200);
-    //set x lines
+    //////////set x lines///////////
     SPI_SEND(0x2A);
-    PORTD = SetBit(PORTD, 5, 1); //a0
+    PORTC = SetBit(PORTC, 3, 1); //a0
     _delay_ms(200);
+    SPI_SEND(0x00);
+    SPI_SEND(0x00);
     SPI_SEND(0x00);
     SPI_SEND(0x11);
+    PORTC = SetBit(PORTC, 3, 0);
     _delay_ms(200);
+    //////////set y lines//////////////////
+    SPI_SEND(0x2B);
+    PORTC = SetBit(PORTC, 3, 1);
     SPI_SEND(0x00);
-    SPI_SEND(0xFF);
-    _delay_ms(200);
-    PORTD = SetBit(PORTD, 5, 0); //a0
+    SPI_SEND(0x00);
+    SPI_SEND(0x00);
+    SPI_SEND(0x11);
+    PORTC = SetBit(PORTC, 3, 0);
+    //////////set color /////////////////
     SPI_SEND(0x2C);
-    _delay_ms(200);
-    PORTD = SetBit(PORTD, 5, 1); //a0
+    PORTC = SetBit(PORTC, 3, 1);
+    for(int x = 0; x<289; x++){
+        SPI_SEND(0xFF);
+        SPI_SEND(0xFF);
+        SPI_SEND(0xFF);
+    }
+    PORTC =SetBit(PORTC,3,0);
+
+
+    // SPI_SEND(0x00);
+    // SPI_SEND(0xFF);
+    // _delay_ms(200);
+    // PORTC = SetBit(PORTC, 3, 0); //a0
+    // SPI_SEND(0x2C);
+    // _delay_ms(200);
+    // PORTC = SetBit(PORTC, 3, 1); //a0
 
 }
 
@@ -214,7 +236,7 @@ int main(void)
  
     //  Output: DDR = 1, PORT = 0
     //  Input: DDR = 0, PORT = 1
-    DDRC = 0b000000; PORTC = 0b111111;
+    DDRC = 0b011000; PORTC = 0b100111;
     DDRB = 0b111111; PORTB = 0b000000;
     DDRD = 0b11111111; PORTD = 0b00000000;
     serial_init(9600);
