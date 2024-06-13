@@ -28,7 +28,7 @@ my own original work.
 #define D4_Sharp 6430 //311
 #define C4_Sharp 7219 // 277
 
-#define NUM_TASKS 7 // TODO: Change to the number of tasks being used
+#define NUM_TASKS 8 // TODO: Change to the number of tasks being used
 // main background song
 int I_Want_Billions[45] = {C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, C5_Sharp, E5_Flat, F5_Sharp, C5_Sharp, C5_Sharp, B4_Flat, A4_Flat, A4_Flat, G4_Sharp, F4_Sharp, F4_Sharp, F4_Sharp, A4_Flat, C5_Sharp, B4_Flat, A4_Flat, F4_Sharp, B4_Flat};
 int I_want_Time[45] = {1, 1, 1, 1, 1, 2, 1, 5, 4, 2, 4, 2, 4, 3, 3, 3, 3, 2, 2, 2, 2, 8, 1, 1, 1, 1, 1, 1, 2, 1, 2, 4, 1, 2, 1, 4, 2, 2, 2, 2, 2, 2,2 ,2 ,6};
@@ -41,7 +41,7 @@ int Run_Away_Time[41] = {2, 2, 1, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 4, 1
 int suits[4] = {1,2,3,4};
 int card_values[13] = {1,2,3,4,5,6,7,8,9,10,11,12,13};
 
-// String D_Card_Suits[4] = {"Clubs","Hearts","Spades","Diamonds"};
+String D_Card_Suits[4] = {"Clubs","Hearts","Spades","Diamonds"};
 // char *D_CARD_Face[13] = {"1","2","3","4","5","6","7","8","9","10","J","Q","K"};
 // int Dealer_vals[11] = {0,0,0,0,0,0,0,0,0,0,0};
 
@@ -57,6 +57,8 @@ unsigned char ii;
 unsigned char jj;
 unsigned char k;
 unsigned char l;
+unsigned char n;
+unsigned char n2;
 unsigned char m;
 unsigned long t;
 unsigned long tt;
@@ -91,6 +93,8 @@ unsigned char player_limit;
 unsigned char needCards;
 unsigned char hit_me;
 unsigned char player_choice;
+unsigned char push_button;
+unsigned char show_face;
 // int temp_bet;
 char *dealer_card;
 char *player_card;
@@ -110,13 +114,15 @@ typedef struct _task
 //  e.g. const unsined long TASK1_PERIOD = <PERIOD>
 const unsigned long JS_Period = 100;
 const unsigned long D_Card_Period = 1000;
-const unsigned long P_Card_Period = 1000;
+const unsigned long P_Card_Period = 200;
 const unsigned long Background_Period = 200;
 const unsigned long Bet_Period = 1000;
 const unsigned long timer_period = 100;
 const unsigned long timer2_period = 100;
 const unsigned long Direction_Period = 500;
-const unsigned long Winner_Period = 1000;
+const unsigned long Card_Period = 200;
+const unsigned long Clear_Period = 200;
+const unsigned long Card_F_Period = 200;
 
 const unsigned long GCD_PERIOD = findGCD(JS_Period, D_Card_Period); // TODO:Set the GCD Period
 
@@ -154,7 +160,7 @@ void ST7735_init()
     SPI_SEND(0x00);
     SPI_SEND(0x00);
     SPI_SEND(0x00);
-    SPI_SEND(0x11);
+    SPI_SEND(0xA0);
     PORTC = SetBit(PORTC, 3, 0);
     _delay_ms(200);
     //////////set y lines//////////////////
@@ -163,27 +169,17 @@ void ST7735_init()
     SPI_SEND(0x00);
     SPI_SEND(0x00);
     SPI_SEND(0x00);
-    SPI_SEND(0x11);
+    SPI_SEND(0x80);
     PORTC = SetBit(PORTC, 3, 0);
     //////////set color /////////////////
     SPI_SEND(0x2C);
     PORTC = SetBit(PORTC, 3, 1);
-    for(int x = 0; x<289; x++){
+    for(int x = 0; x<20480; x++){
+        SPI_SEND(0x00);
         SPI_SEND(0xFF);
-        SPI_SEND(0xFF);
-        SPI_SEND(0xFF);
+        SPI_SEND(0x00);
     }
     PORTC =SetBit(PORTC,3,0);
-
-
-    // SPI_SEND(0x00);
-    // SPI_SEND(0xFF);
-    // _delay_ms(200);
-    // PORTC = SetBit(PORTC, 3, 0); //a0
-    // SPI_SEND(0x2C);
-    // _delay_ms(200);
-    // PORTC = SetBit(PORTC, 3, 1); //a0
-
 }
 
 void TimerISR()
@@ -203,7 +199,7 @@ int stages[8] = {0b0001, 0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001}
 
 // TODO: Create your tick functions for each task
 
-enum JS_state{idle_state, up_state, down_state};
+enum JS_state{idle_state, up_state, down_state, push_state};
 int TickFtn_JS(int state);
 
 enum Back_state{idleMusic_state, note_state, play_state};
@@ -224,8 +220,14 @@ int TickFtn_timer2(int state);
 enum Pcard_state{P_idle_state, P_suit_state, P_face_state, P_val_state};
 int TickFtn_Player(int state);
 
-// enum Winner_state{wait_state, decide_state, display_state};
-// int TickFtn_Winner(int state);
+enum Card_state{wait_state, choose_state, display_O_state, display_T_state, display_Th_state, display_F_state, display_Fi_state};
+int TickFtn_Card(int state);
+
+enum Card_F_state{wait_F_state, choose_F_state, face_O_state, face_T_state, face_Th_state, face_F_state, face_Fi_state};
+int TickFtn_CardF(int state);
+
+// enum Clear_state{C_idle_state, clear_state};
+// int TickFtn_Clear(int state);
 
 int main(void)
 {
@@ -297,11 +299,21 @@ int main(void)
     tasks[i].period = timer2_period;
     tasks[i].elapsedTime = tasks[i].period;
     tasks[i].TickFct = &TickFtn_timer2;
+    i++;
+    tasks[i].state = wait_state;
+    tasks[i].period = Card_Period;
+    tasks[i].elapsedTime = tasks[i].period;
+    tasks[i].TickFct = &TickFtn_Card;
+    i++;
+    tasks[i].state = wait_F_state;
+    tasks[i].period = Card_F_Period;
+    tasks[i].elapsedTime = tasks[i].period;
+    tasks[i].TickFct = &TickFtn_CardF;
     // i++;
-    // tasks[i].state = wait_state;
-    // tasks[i].period = Winner_Period;
+    // tasks[i].state = C_idle_state;
+    // tasks[i].period = Clear_Period;
     // tasks[i].elapsedTime = tasks[i].period;
-    // tasks[i].TickFct = &TickFtn_Winner;
+    // tasks[i].TickFct = &TickFtn_Clear;
 
     TimerSet(GCD_PERIOD);
     TimerOn();
@@ -313,7 +325,7 @@ int main(void)
     return 0;
 }
 
-// enum JS_Period{idle_state, up_state, down_state};
+// enum JS_Period{idle_state, up_state, down_state, push_state};
 int TickFtn_JS(int state)
 {
     switch (state)
@@ -328,6 +340,10 @@ int TickFtn_JS(int state)
         {
             is_down = 0;
             state = down_state;
+        }
+        else if(!((PINC >> 2) & 0x01)){
+            push_button = 1;
+            state = push_state;
         }
         else
         {
@@ -359,6 +375,19 @@ int TickFtn_JS(int state)
         }
         break;
 
+    case push_state:
+        if(!((PINC >> 2) & 0x01)){
+            push_button = 1;
+            state = push_state;
+        }
+        else if (((PINC >> 2) & 0x01))
+        {
+            push_button = 0;
+            state = idle_state;
+        }
+    break;
+        
+
     default:
         break;
     }
@@ -377,6 +406,10 @@ int TickFtn_JS(int state)
         is_down = 1;
         // serial_println(is_down);
         break;
+
+    case push_state:
+        push_button = 0;
+    break;
 
     default:
         break;
@@ -417,21 +450,24 @@ int TickFtn_Bet(int state){
             lcd_write_str("Game Start!");
             // serial_println("moving on to money");
             player_choice = 0;
+            newGame = 0;
             game_start = 1;
             state = money_state;
         }
     break;
 
     case money_state:
-        if(player_money > 0){
+        if(player_money > 0  && !newGame){
             // serial_println("were in the money");
             state = money_state;
         }
-        else if(newGame){
+        else if(newGame && player_money > 0){
             // serial_println("going back to betting");
-            newGame = 0;
+            //newGame = 0;
             lcd_clear();
+            lcd_write_str("Place Bets");
             player_bet = 0;
+            newGame = 0;
             state = betting_state;
         }
         else if(player_money <= 0){
@@ -604,44 +640,45 @@ int TickFtn_Bet(int state){
             {
                 player_money = player_money - player_bet;
                 player_choice = 0;
+                lcd_clear();
+                lcd_write_str("BUST!!! HAHA");
                 serial_println(player_money);
             }
             else if (dealer_total > 21)
             {
                 player_money = player_money + player_bet;
                 player_choice = 0;
+                lcd_clear();
+                lcd_write_str("YOU WIN I GUESS");
                 serial_println(player_money);
             }
             else if (player_total > dealer_total)
             {
                 player_money = player_money + player_bet;
                 player_choice = 0;
+                lcd_clear();
+                lcd_write_str("YOU WIN BOOO!!!");
                 serial_println(player_money);
             }
             else if (player_total < dealer_total)
             {
                 player_money = player_money - player_bet;
                 player_choice = 0;
+                lcd_clear();
+                lcd_write_str("YOU LOST HAHA");
                 serial_println(player_money);
             }
-            if (!player_choice)
+            
+        }
+        else if (!((PINC >> 5) & 0x01))
             {
+                // lcd_clear();
+                // lcd_write_str("Place Bets");
+                // player_bet = 0;
+                game_start = 0;
                 newGame = 1;
                 serial_println("new game");
-                
             }
-        }
-        
-    /////////////////////
-        // if(player_loss){
-        //     player_money = player_money - player_bet;
-        //     serial_println(player_money);
-        // }
-        // else if(player_win){
-        //     player_money = player_money + player_bet;
-        //     serial_println(player_money);
-        // }
-        
     break;
 
     case loan_state:
@@ -909,7 +946,7 @@ int TickFtn_Dealer(int state){
         else if(player_limit){
             state = D_val_state;
         }
-        else if(!game_start && player_limit){
+        else if(newGame && player_limit){
             needCards = 0;
             state = D_idle_card;
         }
@@ -1157,7 +1194,7 @@ int TickFtn_Player(int state){
     break;
 
     case P_val_state:
-        if(hit_me){
+        if(hit_me && !newGame){
             player_suit = 0;
             player_face = 0;
             ii2 = 1;
@@ -1165,10 +1202,10 @@ int TickFtn_Player(int state){
             hit_me = 0;
             state = P_suit_state;
         }
-        else if(!hit_me){
+        else if(!hit_me && !newGame){
             state = P_val_state;
         }
-        else if(!game_start && !hit_me){
+        else if(newGame && !hit_me){
             needCards2 = 0;
             state = P_idle_state;
         }
@@ -1266,63 +1303,680 @@ int TickFtn_timer2(int state){
     return state;
 }
 
-// // enum Winner_state{wait_state, decide_state, display_state};
-// int TickFtn_Winner(int state){
+// enum Card_state{wait_state, choose_state, display_O_state, display_T_state, display_Th_state, display_F_state, display_Fi_state};
+int TickFtn_Card(int state){
+    switch (state)
+    {
+    case wait_state:
+        if(game_start){
+            n2++;
+            state = choose_state;
+        }
+        else{
+            n2 = 0;
+            state = wait_state;
+        }
+    break;
+    
+    case choose_state:
+        if(n2 == 1){
+            state = display_O_state;
+        }
+        else if(n2 == 2){
+            state = display_T_state;
+        }
+        else if(n2 == 3){
+            state = display_Th_state;
+        }
+        else if(n2 == 4){
+            state = display_F_state;
+        }
+        else if(n2 == 5){
+            state = display_Fi_state;
+        }
+        else{
+            state = choose_state;
+        }
+    break;
+
+    case display_O_state:
+        if(!((PINC >> 2) & 0x01)){
+            // show_face = 1;
+            serial_println("button");
+            // serial_println(push_button);
+            n2++;
+            state = choose_state; 
+        }
+        else{
+            state = display_O_state;
+        }
+    break;
+
+    case display_T_state:
+    if(!((PINC >> 2) & 0x01)){
+            n2++;
+            state = choose_state; 
+        }
+        else{
+            state = display_T_state;
+        }
+    break;
+
+    case display_Th_state:
+        if(!((PINC >> 2) & 0x01)){
+            n2++;
+            state = choose_state; 
+        }
+        else{
+            state = display_Th_state;
+        }
+    break;
+
+    case display_F_state:
+        if(!((PINC >> 2) & 0x01)){
+            n2++;
+            state = choose_state; 
+        }
+        else{
+            state = display_F_state;
+        };
+    break;
+
+    case display_Fi_state:
+        if(!((PINC >> 2) & 0x01)){
+            n2++;
+            state = choose_state; 
+        }
+        else{
+            state = display_Fi_state;
+        };
+    break;
+
+    default:
+        break;
+    }
+    switch (state)
+    {
+    case wait_state: 
+        n2 = 0;
+    break;
+
+    case choose_state:
+    serial_println("here");
+    serial_println(n2);
+    serial_println(push_button);
+    break;
+
+    case display_O_state:
+        //////////set x lines//////////////////
+        SPI_SEND(0x2A);
+        PORTC = SetBit(PORTC, 3, 1); // a0
+        SPI_SEND(0x00);
+        SPI_SEND(0x00);
+        SPI_SEND(0x00);
+        SPI_SEND(0x19);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set y lines//////////////////
+        SPI_SEND(0x2B);
+        PORTC = SetBit(PORTC, 3, 1);
+        SPI_SEND(0x00);
+        SPI_SEND(0x5A);
+        SPI_SEND(0x00);
+        SPI_SEND(0xA0);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set color /////////////////
+        SPI_SEND(0x2C);
+        PORTC = SetBit(PORTC, 3, 1);
+        for (int x = 0; x < 1750; x++)
+        {
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+        }
+        PORTC = SetBit(PORTC, 3, 0);
+    break;
+
+    case display_T_state:
+        ////////set x2 lines//////////////////
+        SPI_SEND(0x2A);
+        PORTC = SetBit(PORTC, 3, 1); // a0
+        SPI_SEND(0x00);
+        SPI_SEND(0x1C);
+        SPI_SEND(0x00);
+        SPI_SEND(0x34);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set y2 lines//////////////////
+        SPI_SEND(0x2B);
+        PORTC = SetBit(PORTC, 3, 1);
+        SPI_SEND(0x00);
+        SPI_SEND(0x5A);
+        SPI_SEND(0x00);
+        SPI_SEND(0xA0);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set color /////////////////
+        SPI_SEND(0x2C);
+        PORTC = SetBit(PORTC, 3, 1);
+        for (int x = 0; x < 1680; x++)
+        {
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+        }
+        PORTC = SetBit(PORTC, 3, 0);
+    break;
+
+    case display_Th_state:
+        ////////set x3 lines//////////////////
+        SPI_SEND(0x2A);
+        PORTC = SetBit(PORTC, 3, 1); // a0
+        SPI_SEND(0x00);
+        SPI_SEND(0x37);
+        SPI_SEND(0x00);
+        SPI_SEND(0x4F);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set y3 lines//////////////////
+        SPI_SEND(0x2B);
+        PORTC = SetBit(PORTC, 3, 1);
+        SPI_SEND(0x00);
+        SPI_SEND(0x5A);
+        SPI_SEND(0x00);
+        SPI_SEND(0xA0);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set color /////////////////
+        SPI_SEND(0x2C);
+        PORTC = SetBit(PORTC, 3, 1);
+        for (int x = 0; x < 1680; x++)
+        {
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+        }
+        PORTC = SetBit(PORTC, 3, 0);
+    break;
+
+    case display_F_state:
+        ////////set x4 lines//////////////////
+        SPI_SEND(0x2A);
+        PORTC = SetBit(PORTC, 3, 1); // a0
+        SPI_SEND(0x00);
+        SPI_SEND(0x52);
+        SPI_SEND(0x00);
+        SPI_SEND(0x69);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set y4 lines//////////////////
+        SPI_SEND(0x2B);
+        PORTC = SetBit(PORTC, 3, 1);
+        SPI_SEND(0x00);
+        SPI_SEND(0x5A);
+        SPI_SEND(0x00);
+        SPI_SEND(0xA0);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set color /////////////////
+        SPI_SEND(0x2C);
+        PORTC = SetBit(PORTC, 3, 1);
+        for (int x = 0; x < 1610; x++)
+        {
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+        }
+        PORTC = SetBit(PORTC, 3, 0);
+    break;
+
+    case display_Fi_state:
+        ////////set x5 lines//////////////////
+        SPI_SEND(0x2A);
+        PORTC = SetBit(PORTC, 3, 1); // a0
+        SPI_SEND(0x00);
+        SPI_SEND(0x6C);
+        SPI_SEND(0x00);
+        SPI_SEND(0x84);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set y5 lines//////////////////
+        SPI_SEND(0x2B);
+        PORTC = SetBit(PORTC, 3, 1);
+        SPI_SEND(0x00);
+        SPI_SEND(0x5A);
+        SPI_SEND(0x00);
+        SPI_SEND(0xA0);
+        PORTC = SetBit(PORTC, 3, 0);
+        //////////set color /////////////////
+        SPI_SEND(0x2C);
+        PORTC = SetBit(PORTC, 3, 1);
+        for (int x = 0; x < 1680; x++)
+        {
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+            SPI_SEND(0xFF);
+        }
+        PORTC = SetBit(PORTC, 3, 0);
+    break;
+
+    default:
+        break;
+    }
+    return state;
+}
+
+// enum Card_F_state{wait_F_state, choose_F_state, face_O_state, face_T_state, face_Th_state, face_F_state, face_Fi_state};
+int TickFtn_CardF(int state){
+    switch (state)
+    {
+    case wait_F_state:
+        if(game_start){
+            n++;
+            state = choose_F_state;
+        }
+        else{
+            state = wait_F_state;
+        }
+    break;
+
+    case choose_F_state:
+        if(n == 1){
+            state = face_F_state;
+        }
+        else if(n == 2){
+            state = face_T_state;
+        }
+        else if(n == 3){
+            state = face_Th_state;
+        }
+        else if(n == 4){
+            state = face_F_state;
+        }
+        else if(n == 5){
+            state = face_Fi_state;
+        }
+        else{
+            state = choose_F_state;
+        }
+    break;
+
+    case face_O_state:
+        if(!((PINC >> 2) & 0x01)){
+            // show_face = 1;
+            serial_println("button");
+            // serial_println(push_button);
+            n++;
+            state = choose_F_state; 
+        }
+        else{
+            state = face_O_state;
+        }
+    break;
+
+    case face_T_state:
+    if(!((PINC >> 2) & 0x01)){
+            // show_face = 1;
+            serial_println("button");
+            // serial_println(push_button);
+            n++;
+            state = choose_F_state; 
+        }
+        else{
+            state = face_T_state;
+        }
+    break;
+
+    case face_Th_state:
+    if(!((PINC >> 2) & 0x01)){
+            // show_face = 1;
+            serial_println("button");
+            // serial_println(push_button);
+            n++;
+            state = choose_F_state; 
+        }
+        else{
+            state = face_Th_state;
+        }
+    break;
+
+    case face_F_state:
+    if(!((PINC >> 2) & 0x01)){
+            // show_face = 1;
+            serial_println("button");
+            // serial_println(push_button);
+            n++;
+            state = choose_F_state; 
+        }
+        else{
+            state = face_F_state;
+        }
+    break;
+
+    case face_Fi_state:
+    if(!((PINC >> 2) & 0x01)){
+            // show_face = 1;
+            serial_println("button");
+            // serial_println(push_button);
+            n++;
+            state = choose_F_state; 
+        }
+        else{
+            state = face_Fi_state;
+        }
+    break;
+
+    default:
+        break;
+    }
+
+    switch (state)
+    {
+    case wait_F_state:
+        n = 0;
+    break;
+
+    case choose_F_state:
+    serial_println("here2");
+    serial_println(n);
+    break;
+
+    case face_O_state:
+        serial_println("hoo");
+        serial_println(player_card);
+        if (player_card == "clubs")
+        {
+            //////////set x lines//////////////////
+            SPI_SEND(0x2A);
+            PORTC = SetBit(PORTC, 3, 1); // a0
+            SPI_SEND(0x00);
+            SPI_SEND(0x0C);
+            SPI_SEND(0x00);
+            SPI_SEND(0x13);
+            PORTC = SetBit(PORTC, 3, 0);
+            //////////set y lines//////////////////
+            SPI_SEND(0x2B);
+            PORTC = SetBit(PORTC, 3, 1);
+            SPI_SEND(0x00);
+            SPI_SEND(0x5F);
+            SPI_SEND(0x00);
+            SPI_SEND(0x66);
+            PORTC = SetBit(PORTC, 3, 0);
+            //////////set color /////////////////
+            SPI_SEND(0x2C);
+            PORTC = SetBit(PORTC, 3, 1);
+            for (int x = 0; x < 1750; x++)
+            {
+                SPI_SEND(0x00);
+                SPI_SEND(0x00);
+                SPI_SEND(0x00);
+            }
+            PORTC = SetBit(PORTC, 3, 0);
+        }
+        if (player_card == "hearts")
+        {
+             //////////set x lines//////////////////
+            SPI_SEND(0x2A);
+            PORTC = SetBit(PORTC, 3, 1); // a0
+            SPI_SEND(0x00);
+            SPI_SEND(0x0C);
+            SPI_SEND(0x00);
+            SPI_SEND(0x13);
+            PORTC = SetBit(PORTC, 3, 0);
+            //////////set y lines//////////////////
+            SPI_SEND(0x2B);
+            PORTC = SetBit(PORTC, 3, 1);
+            SPI_SEND(0x00);
+            SPI_SEND(0x5F);
+            SPI_SEND(0x00);
+            SPI_SEND(0x66);
+            PORTC = SetBit(PORTC, 3, 0);
+            //////////set color /////////////////
+            SPI_SEND(0x2C);
+            PORTC = SetBit(PORTC, 3, 1);
+            for (int x = 0; x < 1750; x++)
+            {
+                SPI_SEND(0x00);
+                SPI_SEND(0x00);
+                SPI_SEND(0x00);
+            }
+            PORTC = SetBit(PORTC, 3, 0);
+        }
+        if (player_card == "spades")
+        {
+             //////////set x lines//////////////////
+            SPI_SEND(0x2A);
+            PORTC = SetBit(PORTC, 3, 1); // a0
+            SPI_SEND(0x00);
+            SPI_SEND(0x0C);
+            SPI_SEND(0x00);
+            SPI_SEND(0x13);
+            PORTC = SetBit(PORTC, 3, 0);
+            //////////set y lines//////////////////
+            SPI_SEND(0x2B);
+            PORTC = SetBit(PORTC, 3, 1);
+            SPI_SEND(0x00);
+            SPI_SEND(0x5F);
+            SPI_SEND(0x00);
+            SPI_SEND(0x66);
+            PORTC = SetBit(PORTC, 3, 0);
+            //////////set color /////////////////
+            SPI_SEND(0x2C);
+            PORTC = SetBit(PORTC, 3, 1);
+            for (int x = 0; x < 1750; x++)
+            {
+                SPI_SEND(0x00);
+                SPI_SEND(0x00);
+                SPI_SEND(0x00);
+            }
+            PORTC = SetBit(PORTC, 3, 0);
+        }
+        if (player_card == "diamonds")
+        {
+             //////////set x lines//////////////////
+            SPI_SEND(0x2A);
+            PORTC = SetBit(PORTC, 3, 1); // a0
+            SPI_SEND(0x00);
+            SPI_SEND(0x0C);
+            SPI_SEND(0x00);
+            SPI_SEND(0x13);
+            PORTC = SetBit(PORTC, 3, 0);
+            //////////set y lines//////////////////
+            SPI_SEND(0x2B);
+            PORTC = SetBit(PORTC, 3, 1);
+            SPI_SEND(0x00);
+            SPI_SEND(0x5F);
+            SPI_SEND(0x00);
+            SPI_SEND(0x66);
+            PORTC = SetBit(PORTC, 3, 0);
+            //////////set color /////////////////
+            SPI_SEND(0x2C);
+            PORTC = SetBit(PORTC, 3, 1);
+            for (int x = 0; x < 1750; x++)
+            {
+                SPI_SEND(0x00);
+                SPI_SEND(0x00);
+                SPI_SEND(0x00);
+            }
+            PORTC = SetBit(PORTC, 3, 0);
+        }
+    break;
+
+    case face_T_state:
+    break;
+
+    case face_Th_state:
+    break;
+
+    case face_F_state:
+    break;
+
+    case face_Fi_state:
+    break;
+
+    
+    default:
+        break;
+    }
+    return state;
+}
+
+// enum Clear_state{C_idle_state, clear_state};
+// int TickFtn_Clear(int state){
 //     switch (state)
 //     {
-//     case wait_state:
-//         if(player_choice){
-//             player_win = 0;
-//             player_loss = 0;
-//             state = decide_state;
-//         }
-//         else{
-//             state = wait_state;
-//         }
+//     case C_idle_state:
 //     break;
 
-//     case decide_state:
-//         state = display_state;
+//     case clear_state:
+//         state = C_idle_state;
+        
 //     break;
 
-//     case display_state:
-//         state = wait_state;
-//     break;
-    
 //     default:
 //         break;
 //     }
 //     switch (state)
 //     {
-//     case wait_state:
+//     case C_idle_state:
 //     break;
 
-//     case decide_state:
-//         if (player_total > 21)
-//         {
-//             player_loss = 1;
-//         }
-//         else if(dealer_total > 21){
-//             player_win = 1;
-//         }
-//         else if(player_total > dealer_total){
-//             player_win = 1;
-//         }
-//         else if(player_total < dealer_total){
-//             player_loss = 1;
-//         }
-//     break;
+//     case clear_state:
+//     // serial_println("here");
+//         // if (n2 == 1)
+//         // {
+//         //     //////////set x lines//////////////////
+//         //     SPI_SEND(0x2A);
+//         //     PORTC = SetBit(PORTC, 3, 1); // a0
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x19);
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         //     //////////set y lines//////////////////
+//         //     SPI_SEND(0x2B);
+//         //     PORTC = SetBit(PORTC, 3, 1);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x5A);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0xA0);
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         //     //////////set color /////////////////
+//         //     SPI_SEND(0x2C);
+//         //     PORTC = SetBit(PORTC, 3, 1);
+//         //     for (int x = 0; x < 20480; x++)
+//         //     {
+//         //         SPI_SEND(0x00);
+//         //         SPI_SEND(0xFF);
+//         //         SPI_SEND(0x00);
+//         //     }
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         // }
+//         // else if(n2 == 2){
+//         //      //////////set x2 lines//////////////////
+//         //     SPI_SEND(0x2A);
+//         //     PORTC = SetBit(PORTC, 3, 1); // a0
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x1C);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x34);
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         //     //////////set y2 lines//////////////////
+//         //     SPI_SEND(0x2B);
+//         //     PORTC = SetBit(PORTC, 3, 1);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x5A);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0xA0);
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         //      //////////set color /////////////////
+//         //     SPI_SEND(0x2C);
+//         //     PORTC = SetBit(PORTC, 3, 1);
+//         //     for (int x = 0; x < 20480; x++)
+//         //     {
+//         //         SPI_SEND(0x00);
+//         //         SPI_SEND(0xFF);
+//         //         SPI_SEND(0x00);
+//         //     }
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         // }
+//         // else if(n2 == 3){
+//         //      //////////set x3 lines//////////////////
+//         //     SPI_SEND(0x2A);
+//         //     PORTC = SetBit(PORTC, 3, 1); // a0
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x37);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x4F);
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         //     //////////set y3 lines//////////////////
+//         //     SPI_SEND(0x2B);
+//         //     PORTC = SetBit(PORTC, 3, 1);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x5A);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0xA0);
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         //      //////////set color /////////////////
+//         //     SPI_SEND(0x2C);
+//         //     PORTC = SetBit(PORTC, 3, 1);
+//         //     for (int x = 0; x < 20480; x++)
+//         //     {
+//         //         SPI_SEND(0x00);
+//         //         SPI_SEND(0xFF);
+//         //         SPI_SEND(0x00);
+//         //     }
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         // }
 
-//     case display_state:
-//         // if(player_win){
-//         //     lcd_clear();
-//         //     lcd_write_str("You win!");
+//         // else if(n2 == 4){
+//         //      //////////set x4 lines//////////////////
+//         //     SPI_SEND(0x2A);
+//         //     PORTC = SetBit(PORTC, 3, 1); // a0
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x52);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x69);
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         //     //////////set y4 lines//////////////////
+//         //     SPI_SEND(0x2B);
+//         //     PORTC = SetBit(PORTC, 3, 1);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0x5A);
+//         //     SPI_SEND(0x00);
+//         //     SPI_SEND(0xA0);
+//         //     PORTC = SetBit(PORTC, 3, 0);
+//         //      //////////set color /////////////////
+//         //     SPI_SEND(0x2C);
+//         //     PORTC = SetBit(PORTC, 3, 1);
+//         //     for (int x = 0; x < 20480; x++)
+//         //     {
+//         //         SPI_SEND(0x00);
+//         //         SPI_SEND(0xFF);
+//         //         SPI_SEND(0x00);
+//         //     }
+//         //     PORTC = SetBit(PORTC, 3, 0);
 //         // }
-//         // else if(player_loss){
-//         //     lcd_clear();
-//         //     lcd_write_str("YOU LOSE HAHAHA");
-//         // }
-//     break;
+//         //////////set x lines///////////
+//     // SPI_SEND(0x2A);
+//     // PORTC = SetBit(PORTC, 3, 1); //a0
+//     // // _delay_ms(200);
+//     // SPI_SEND(0x00);
+//     // SPI_SEND(0x00);
+//     // SPI_SEND(0x00);
+//     // SPI_SEND(0xA0);
+//     // PORTC = SetBit(PORTC, 3, 0);
+//     // // _delay_ms(200);
+//     // //////////set y lines//////////////////
+//     // SPI_SEND(0x2B);
+//     // PORTC = SetBit(PORTC, 3, 1);
+//     // SPI_SEND(0x00);
+//     // SPI_SEND(0x00);
+//     // SPI_SEND(0x00);
+//     // SPI_SEND(0x80);
+//     // PORTC = SetBit(PORTC, 3, 0);
+//     // //////////set color /////////////////
+//     // SPI_SEND(0x2C);
+//     // PORTC = SetBit(PORTC, 3, 1);
+//     // for(int x = 0; x<20480; x++){
+//     //     SPI_SEND(0x00);
+//     //     SPI_SEND(0xFF);
+//     //     SPI_SEND(0x00);
+//     // }
+//     // PORTC =SetBit(PORTC,3,0);
+//         break;
     
 //     default:
 //         break;
